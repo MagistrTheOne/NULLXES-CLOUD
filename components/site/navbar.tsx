@@ -1,6 +1,6 @@
 import { ChevronDown, Globe } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 const LINKS = [
   { label: "Compute", href: "/#compute" },
@@ -26,7 +26,7 @@ export function Navbar() {
         </div>
         <div className="flex-1 lg:hidden" />
         <button className="hidden items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground sm:flex"><Globe className="size-3.5" />EN<ChevronDown className="size-3" /></button>
-        <Button variant="outline" size="sm" className="px-7" disabled>Sign In</Button>
+        <Link href="/auth/sign-in" className={buttonVariants({ variant: "outline", size: "sm", className: "px-7" })}>Sign In</Link>
       </div>
       <div className="border-t border-line lg:hidden">
         <div className="mx-auto flex max-w-[1280px] gap-6 overflow-x-auto px-5 py-3 text-[11px] text-muted-foreground sm:px-10">

@@ -16,7 +16,6 @@ coverage/
 # Local env and secrets
 .env
 .env.*
-!.env.example
 
 # Logs
 *.log
@@ -29,3 +28,4 @@ pnpm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+.neon

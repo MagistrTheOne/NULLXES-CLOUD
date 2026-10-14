@@ -13,6 +13,7 @@ The project currently includes:
 - GPU / CPU / cluster / dedicated catalog UI
 - Product pages for pricing, storage, networking, instances, and documentation
 - A configuration flow that prepares an email quote request
+- Neon PostgreSQL, Managed Auth, and a Neon Function
 
 ## Routes
 
@@ -43,20 +44,26 @@ Then open http://localhost:3000
 ## Verification scripts
 
 ```bash
+npx tsc --noEmit
 npm run build
+# Start the production app in one terminal.
+npm run start
+# Run the integration checks in a second terminal.
+npm run test:neon
 ```
 
-There is no lint script configured in package.json at the moment, and no backend auth / billing / database layer is implemented in the codebase yet.
+`npm run test:neon` checks a live PostgreSQL query, the application health endpoint, the Neon Auth session endpoint, and the deployed Neon Function. It requires the app to be running at `http://127.0.0.1:3000` and the Neon variables in the ignored `.env` file.
 
-## What is not implemented yet
+### Local Neon environment
 
-The following capabilities are described in the architecture notes but are not verified in the repo:
-- Better Auth authentication
-- Neon PostgreSQL / Drizzle integration
-- provider API adapters for RunPod
-- billing ledger and cost accounting
-- RBAC / authorization layer
-- instance orchestration and resource lifecycle
-- production backend APIs and admin tooling
+Use the local `.env` file for Neon-managed values (`neon env pull`) and `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`). Keep `.env` private and never commit it. The smoke test deliberately does not create a production auth user; verify successful sign-in with a dedicated test account through `/auth/sign-up`.
 
-Pricing is available on request. Resource operations and account-specific instance data require backend integration.
+## Neon integration
+
+- `/api/health` checks PostgreSQL and the deployed `hello` Function without exposing service errors or credentials.
+- `/api/auth/[...path]` proxies Neon Managed Auth. Sign-in and sign-up pages use the managed email/password API; `/instances` requires an authenticated session.
+- Database access uses the pooled `DATABASE_URL`; no schema or migrations are created by this integration.
+- Neon Object Storage is provisioned but is not connected to the app yet. No AWS SDK, AWS account, storage API, or storage credentials are used by application code.
+- The Neon AI Gateway remains disabled because it is not included in the current plan.
+
+Provider provisioning, billing, and account-specific instance data are not implemented by this integration.
