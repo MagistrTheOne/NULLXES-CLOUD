@@ -73,11 +73,21 @@ for (const route of [
   "/docs",
   "/auth/sign-in",
   "/auth/sign-up",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/reset-password?token=INVALID_TOKEN",
+  "/auth/verify-email",
 ]) {
   if (route === "/instances") continue;
   const response = await fetch(new URL(route, appBaseUrl));
   assert.equal(response.status, 200, `Expected ${route} to render`);
   const html = await response.text();
+  if (route.includes("token=INVALID_TOKEN")) {
+    assert.ok(
+      html.includes("Reset link unavailable"),
+      "Invalid recovery tokens must not open the reset form.",
+    );
+  }
   if (route === "/") {
     for (const destination of ["/instances", "/storage", "/network", "/pricing", "/docs"]) {
       assert.ok(html.includes(`href="${destination}"`), `Missing navbar destination ${destination}`);
