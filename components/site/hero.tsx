@@ -1,10 +1,10 @@
 import { Cpu, Globe, Server, ShieldCheck } from "lucide-react";
 
 const FEATURES = [
-  { Icon: Cpu, t: "High Performance", d: "Latest NVIDIA GPUs" },
-  { Icon: Server, t: "Scalable Clusters", d: "From single GPU to dedicated clusters" },
-  { Icon: ShieldCheck, t: "Redundancy", d: "Multi-zone high availability" },
-  { Icon: Globe, t: "Global Access", d: "Low latency worldwide" },
+  { Icon: Cpu, t: "GPU / CPU", d: "Compute for demanding workloads" },
+  { Icon: Server, t: "Cluster concepts", d: "Multi-node configurations" },
+  { Icon: ShieldCheck, t: "Built for scale", d: "Flexible infrastructure options" },
+  { Icon: Globe, t: "Built for AI", d: "Research and robotics workloads" },
 ];
 
 export function Hero() {

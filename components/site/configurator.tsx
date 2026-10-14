@@ -20,13 +20,14 @@ function Form({ item, onClose }: { item: Item; onClose: () => void }) {
     <>
       <DialogTitle>{item.name}</DialogTitle>
       <DialogDescription>{item.arch} · {item.specs[0]}</DialogDescription>
-      <Field label="Units per node"><ToggleGroup type="single" value={n} onValueChange={(v) => v && setN(v)}>{item.counts.map((c) => <ToggleGroupItem key={c} value={String(c)}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
-      <Field label="Topology"><ToggleGroup type="single" value={topo} onValueChange={(v) => v && setTopo(v)}>{TOPO.map((c) => <ToggleGroupItem key={c} value={c}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
-      <Field label="Region"><ToggleGroup type="single" value={reg} onValueChange={(v) => v && setReg(v)}>{REG.map((c) => <ToggleGroupItem key={c} value={c}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
+      <Field label="Units per node"><ToggleGroup value={[n]} onValueChange={(values) => values[0] && setN(values[0])}>{item.counts.map((c) => <ToggleGroupItem key={c} value={String(c)}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
+      <Field label="Topology"><ToggleGroup value={[topo]} onValueChange={(values) => values[0] && setTopo(values[0])}>{TOPO.map((c) => <ToggleGroupItem key={c} value={c}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
+      <Field label="Region"><ToggleGroup value={[reg]} onValueChange={(values) => values[0] && setReg(values[0])}>{REG.map((c) => <ToggleGroupItem key={c} value={c}>{c}</ToggleGroupItem>)}</ToggleGroup></Field>
       <p className="my-6 rounded border border-line p-3.5 text-[12.5px] text-[#cfcfd2]">{summary}</p>
+      <p className="-mt-3 mb-5 text-[10px] leading-4 text-muted-foreground">Opens an email draft with this configuration; no order is placed.</p>
       <div className="flex gap-2.5">
         <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-        <Button className="flex-1" asChild><a href={`mailto:ceo@nullxes.com?subject=${encodeURIComponent("NULLXES Cloud quote")}&body=${encodeURIComponent(summary)}`}>Request quote</a></Button>
+        <Button className="flex-1" render={<a href={`mailto:ceo@nullxes.com?subject=${encodeURIComponent("NULLXES Cloud quote")}&body=${encodeURIComponent(summary)}`} />}>Request quote</Button>
       </div>
     </>
   );

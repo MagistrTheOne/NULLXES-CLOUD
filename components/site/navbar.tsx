@@ -1,25 +1,37 @@
 import { ChevronDown, Globe } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-const LINKS = ["Compute", "Instances", "Storage", "Network", "Pricing", "Documentation"];
+const LINKS = [
+  { label: "Compute", href: "/#compute" },
+  { label: "Instances", href: "/instances" },
+  { label: "Storage", href: "/storage" },
+  { label: "Network", href: "/network" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Documentation", href: "/docs" },
+];
 
 export function Navbar() {
   return (
     <nav className="sticky top-0 z-40 border-b border-line bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-9 px-5 sm:px-10">
-        <a href="#" className="whitespace-nowrap font-display text-xl">
+        <Link href="/" className="whitespace-nowrap font-display text-xl">
           NULLXES<sup className="ml-0.5 align-top text-[8px]">®</sup>
           <span className="ml-5 hidden border-l border-border pl-5 text-[15px] tracking-[.12em] text-muted-foreground sm:inline">CLOUD</span>
-        </a>
-        <div className="ml-3 hidden gap-8 text-[12.5px] text-muted-foreground lg:flex">
-          {LINKS.map((l, i) => (
-            <a key={l} href="#compute" className={cn("border-b border-transparent py-[22px] transition-colors hover:text-foreground", i === 0 && "border-foreground text-foreground")}>{l}</a>
+        </Link>
+        <div className="ml-3 hidden min-w-0 flex-1 gap-5 overflow-x-auto text-[12px] text-muted-foreground lg:flex xl:gap-7">
+          {LINKS.map((link) => (
+            <Link key={link.label} href={link.href} className="whitespace-nowrap border-b border-transparent py-[22px] transition-colors hover:border-foreground hover:text-foreground">{link.label}</Link>
           ))}
         </div>
-        <div className="flex-1" />
+        <div className="flex-1 lg:hidden" />
         <button className="hidden items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground sm:flex"><Globe className="size-3.5" />EN<ChevronDown className="size-3" /></button>
-        <Button variant="outline" size="sm" className="px-7">Sign In</Button>
+        <Button variant="outline" size="sm" className="px-7" disabled>Sign In</Button>
+      </div>
+      <div className="border-t border-line lg:hidden">
+        <div className="mx-auto flex max-w-[1280px] gap-6 overflow-x-auto px-5 py-3 text-[11px] text-muted-foreground sm:px-10">
+          {LINKS.map((link) => <Link key={link.label} href={link.href} className="shrink-0 hover:text-foreground">{link.label}</Link>)}
+        </div>
       </div>
     </nav>
   );

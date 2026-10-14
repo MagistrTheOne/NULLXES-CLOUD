@@ -1,6 +1,6 @@
 # NULLXES Cloud
 
-A dark-mode Next.js landing page prototype for a GPU / CPU cloud platform focused on AI, robotics, and high-performance compute workloads.
+A dark-mode Next.js frontend for a GPU / CPU cloud platform focused on AI, robotics, and high-performance compute workloads.
 
 ## Current implementation
 
@@ -8,10 +8,20 @@ The project currently includes:
 - Next.js App Router frontend
 - React 19 + TypeScript
 - Tailwind CSS v4 styling
-- shadcn/ui-inspired primitives for cards, tabs, dialogs, buttons, and toggle groups
+- shadcn/ui Base UI component foundation
 - Premium dark infrastructure marketing layout
 - GPU / CPU / cluster / dedicated catalog UI
-- Sample configurator flow for quoting resources
+- Product pages for pricing, storage, networking, instances, and documentation
+- A configuration flow that prepares an email quote request
+
+## Routes
+
+- `/` — Compute catalog and product landing page
+- `/pricing` — pricing categories and billing units; contact for pricing
+- `/storage` — block volumes, object storage, and shared storage
+- `/network` — private connectivity, public traffic, and high-speed fabric
+- `/instances` — instance workspace with search, filters, and an empty state
+- `/docs` — public product and platform documentation
 
 ## Verified stack
 
@@ -49,4 +59,4 @@ The following capabilities are described in the architecture notes but are not v
 - instance orchestration and resource lifecycle
 - production backend APIs and admin tooling
 
-This project is currently a frontend prototype and a product demo shell, not a complete cloud platform backend.
+Pricing is available on request. Resource operations and account-specific instance data require backend integration.

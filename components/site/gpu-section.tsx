@@ -19,6 +19,7 @@ export function GpuSection() {
         <div>
           <h2 className="text-base font-medium">{tab === "gpu" ? "GPU INSTANCES" : `${cur.label.toUpperCase()} INSTANCES`}</h2>
           <p className="mt-1 max-w-[560px] text-xs text-muted-foreground">{cur.sub}</p>
+          <p className="mt-2 max-w-[620px] text-[10px] leading-4 text-faint">Explore compute configurations for training, inference, and distributed workloads.</p>
         </div>
         <div className="flex w-full items-center justify-between gap-6 sm:w-auto">
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
@@ -41,7 +42,7 @@ export function GpuSection() {
             <ul className="mb-5 grid gap-[11px] text-[11px] text-[#b4b4b8]">
               {g.specs.map((s, i) => { const I = ICONS[i]; return <li key={s} className={`flex items-center gap-2.5 ${i === 0 ? "text-foreground" : ""}`}><I className="size-3 flex-none text-faint" strokeWidth={1.5} />{s}</li>; })}
             </ul>
-            <Button variant="outline" size="full" className="mt-auto" onClick={() => setCfg(g)}>Configure <ArrowRight className="size-3" /></Button>
+            <Button variant="outline" className="mt-auto h-10 w-full" onClick={() => setCfg(g)}>Configure <ArrowRight className="size-3" /></Button>
           </article>
         ))}
       </div>
