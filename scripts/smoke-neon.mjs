@@ -24,7 +24,7 @@ assert.equal(functionResponse.status, 200);
 assert.deepEqual(await functionResponse.json(), { status: "ok", service: "hello" });
 console.log("Neon Functions: deployed hello endpoint passed.");
 
-const appBaseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 const healthResponse = await fetch(new URL("/api/health", appBaseUrl), {
   signal: AbortSignal.timeout(20_000),
 });
@@ -57,12 +57,52 @@ assert.equal(invalidLogin.status, 401);
 await invalidLogin.arrayBuffer();
 console.log("Neon Auth: rejected a non-existent test identity without creating an account.");
 
+const invalidVerification = await fetch(
+  new URL("/api/auth/email-otp/verify-email", appBaseUrl),
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: `neon-verification-smoke-${randomUUID()}@example.invalid`,
+      otp: "000000",
+    }),
+    signal: AbortSignal.timeout(15_000),
+  },
+);
+assert.equal(invalidVerification.status, 400);
+const verificationError = await invalidVerification.json();
+assert.equal(verificationError.code, "INVALID_OTP");
+console.log("Neon Auth: invalid verification codes are rejected without creating an account or sending email.");
+
 const protectedResponse = await fetch(new URL("/instances", appBaseUrl), {
   redirect: "manual",
 });
 assert.equal(protectedResponse.status, 307);
 assert.match(protectedResponse.headers.get("location") ?? "", /\/auth\/sign-in/);
 console.log("Authentication: unauthenticated /instances access redirects to sign-in.");
+
+const accountResponse = await fetch(
+  new URL(`/api/account?userId=${randomUUID()}`, appBaseUrl),
+);
+assert.equal(accountResponse.status, 401);
+const accountError = await accountResponse.json();
+assert.equal(accountError.error?.code, "UNAUTHORIZED");
+console.log("Account API: unauthenticated and userId-spoofed requests return 401.");
+
+const catalogResponse = await fetch(new URL("/api/catalog", appBaseUrl));
+assert.equal(catalogResponse.status, 200);
+const catalogPayload = await catalogResponse.json();
+assert.ok(Array.isArray(catalogPayload.data?.catalog));
+console.log("Catalog API: public response contains only the catalog data shape.");
+
+const pricingResponse = await fetch(new URL("/api/pricing", appBaseUrl));
+assert.equal(pricingResponse.status, 200);
+const pricingPayload = await pricingResponse.json();
+assert.ok(Array.isArray(pricingPayload.data?.pricing));
+for (const price of pricingPayload.data.pricing) {
+  assert.equal(typeof price.rate, "string", "Monetary amounts must remain decimal strings.");
+}
+console.log("Pricing API: published rates are returned as exact decimal strings.");
 
 for (const route of [
   "/",

@@ -54,7 +54,7 @@ npm run start
 npm run test:neon
 ```
 
-`npm run test:neon` checks a live PostgreSQL query, the application health endpoint, the Neon Auth session endpoint, and the deployed Neon Function. It requires the app to be running at `http://127.0.0.1:3000` and the Neon variables in the ignored `.env` file.
+`npm run test:neon` checks a live PostgreSQL query, the application health endpoint, the Neon Auth session endpoint, and the deployed Neon Function. It requires the app to be running at `http://localhost:3000` and the Neon variables in the ignored `.env` file.
 
 ### Local Neon environment
 
@@ -64,11 +64,21 @@ Use the local `.env` file for Neon-managed values (`neon env pull`) and `NEON_AU
 
 - `/api/health` checks PostgreSQL and the deployed `hello` Function without exposing service errors or credentials.
 - `/api/auth/[...path]` proxies Neon Managed Auth. Sign-in, sign-up, password recovery, and email verification use the existing managed auth provider; `/instances` requires an authenticated session.
-- Database access uses the pooled `DATABASE_URL`; no schema or migrations are created by this integration.
+- Application database requests use the pooled `DATABASE_URL`; Drizzle Kit manages the application-owned schema through reviewed migrations and a direct connection.
 - Neon Object Storage is provisioned but is not connected to the app yet. No AWS SDK, AWS account, storage API, or storage credentials are used by application code.
 - The Neon AI Gateway remains disabled because it is not included in the current plan.
 
 Provider provisioning, billing, and account-specific instance data are not implemented by this integration.
+
+### Database foundation
+
+Application-owned tables are defined in `drizzle/schema.ts`; Neon Auth tables in `neon_auth` are intentionally excluded. `customer_profiles.auth_user_id` stores the verified Neon Auth UUID without a foreign key to provider-managed schema. Catalog, pricing, and instance tables have no seeded production records. Published catalog definitions do not represent live inventory, and instance rows are not created by this phase.
+
+Drizzle Kit uses `DATABASE_URL_UNPOOLED` (or an explicit `DB_MIGRATION_URL`) for schema operations. Use `npm run db:generate` to generate versioned SQL, review the resulting migration, and use `npm run db:migrate` to apply it. `npm run db:check` checks migration consistency; `npm run db:validate` verifies the applied schema. Do not use `drizzle-kit push` against production.
+
+`GET /api/account` requires a verified Neon Auth session and idempotently creates the caller's profile. `GET /api/catalog` and `GET /api/pricing` expose only published entries; pricing results are limited to their current effective period and rates remain exact decimal strings. These endpoints do not provision infrastructure or charge customers.
+
+For `npm run test:db`, set `DB_TEST_URL` to a direct connection for an isolated, temporary Neon branch and run the app against that same branch. The test creates clearly isolated catalog/pricing fixtures, verifies publication filters and price immutability, then removes those fixtures. It refuses to use the configured production host.
 
 ### Neon Auth configuration
 

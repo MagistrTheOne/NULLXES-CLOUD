@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { isAuthApiError } from "@neondatabase/auth/next";
 import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { authClient } from "@/lib/auth/client";
 
@@ -78,11 +79,21 @@ export function VerificationForm() {
           kind: "success",
           text: "Your email is verified. You can now sign in.",
         });
-      } catch {
-        setNotice({
-          kind: "error",
-          text: "We couldn't verify this email right now. Please try again.",
-        });
+      } catch (error) {
+        setNotice(
+          isAuthApiError(error)
+            ? {
+                kind: "error",
+                text:
+                  error.status === 429
+                    ? "Too many verification attempts. Wait a moment and try again."
+                    : "That code is invalid or expired. Request a new code and try again.",
+              }
+            : {
+                kind: "error",
+                text: "We couldn't verify this email right now. Please try again.",
+              },
+        );
       }
     });
   }
