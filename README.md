@@ -71,6 +71,10 @@ Use the local `.env` file for Neon-managed values (`neon env pull`) and `NEON_AU
 
 Provider provisioning, billing, and account-specific instance data are not implemented by this integration.
 
+### Provider runtime boundary
+
+The provider-neutral domain contracts and their current integration boundary are documented in [docs/infrastructure-runtime.md](./docs/infrastructure-runtime.md). No compute provider is selected or connected, and the application does not expose instance provisioning or lifecycle operations.
+
 ### Database foundation
 
 Application-owned tables are defined in `drizzle/schema.ts`; Neon Auth tables in `neon_auth` are intentionally excluded. `customer_profiles.auth_user_id` stores the verified Neon Auth UUID without a foreign key to provider-managed schema. Catalog, pricing, and instance tables have no seeded production records. Published catalog definitions do not represent live inventory, and instance rows are not created by this phase.
