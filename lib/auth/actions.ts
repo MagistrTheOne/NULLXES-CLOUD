@@ -44,7 +44,7 @@ export async function signInWithEmail(
     return { error: "Sign-in is temporarily unavailable. Please try again." };
   }
 
-  redirect("/instances");
+  redirect("/dashboard");
 }
 
 export async function signUpWithEmail(
@@ -91,7 +91,7 @@ export async function signUpWithEmail(
     };
   }
 
-  redirect("/instances");
+  redirect("/dashboard");
 }
 
 export async function signOut(): Promise<void> {

@@ -72,7 +72,7 @@ export function VerificationForm() {
         window.sessionStorage.removeItem("nullxes-verification-email");
         const sessionResult = await authClient.getSession();
         if (sessionResult.data?.session) {
-          router.replace("/instances");
+          router.replace("/dashboard");
           return;
         }
         setNotice({

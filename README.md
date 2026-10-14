@@ -25,6 +25,7 @@ The project currently includes:
 - `/docs` — public product and platform documentation
 - `/auth/sign-in` and `/auth/sign-up` — account access and registration
 - `/auth/forgot-password`, `/auth/reset-password`, and `/auth/verify-email` — Neon Auth recovery and verification flows
+- `/dashboard`, `/instances`, `/compute`, and `/settings` — protected NULLXES CLOUD Console routes
 
 ## Verified stack
 
@@ -77,6 +78,8 @@ Application-owned tables are defined in `drizzle/schema.ts`; Neon Auth tables in
 Drizzle Kit uses `DATABASE_URL_UNPOOLED` (or an explicit `DB_MIGRATION_URL`) for schema operations. Use `npm run db:generate` to generate versioned SQL, review the resulting migration, and use `npm run db:migrate` to apply it. `npm run db:check` checks migration consistency; `npm run db:validate` verifies the applied schema. Do not use `drizzle-kit push` against production.
 
 `GET /api/account` requires a verified Neon Auth session and idempotently creates the caller's profile. `GET /api/catalog` and `GET /api/pricing` expose only published entries; pricing results are limited to their current effective period and rates remain exact decimal strings. These endpoints do not provision infrastructure or charge customers.
+
+The customer console uses the same Neon Auth session. `GET /api/instances` returns only instance lifecycle records owned by that session's user; the dashboard count is scoped to that same owner. The compute catalog shows published definitions only, not provider capacity or provisioning capability. Usage, billing, storage, and network resources are not exposed as active console sections until their data and operations are implemented.
 
 For `npm run test:db`, set `DB_TEST_URL` to a direct connection for an isolated, temporary Neon branch and run the app against that same branch. The test creates clearly isolated catalog/pricing fixtures, verifies publication filters and price immutability, then removes those fixtures. It refuses to use the configured production host.
 

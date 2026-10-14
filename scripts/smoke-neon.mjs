@@ -89,6 +89,14 @@ const accountError = await accountResponse.json();
 assert.equal(accountError.error?.code, "UNAUTHORIZED");
 console.log("Account API: unauthenticated and userId-spoofed requests return 401.");
 
+const unauthenticatedInstances = await fetch(
+  new URL("/api/instances", appBaseUrl),
+);
+assert.equal(unauthenticatedInstances.status, 401);
+const instancesError = await unauthenticatedInstances.json();
+assert.equal(instancesError.error?.code, "UNAUTHORIZED");
+console.log("Instances API: unauthenticated access returns 401.");
+
 const catalogResponse = await fetch(new URL("/api/catalog", appBaseUrl));
 assert.equal(catalogResponse.status, 200);
 const catalogPayload = await catalogResponse.json();
@@ -117,8 +125,22 @@ for (const route of [
   "/auth/reset-password",
   "/auth/reset-password?token=INVALID_TOKEN",
   "/auth/verify-email",
+  "/dashboard",
+  "/compute",
+  "/settings",
 ]) {
-  if (route === "/instances") continue;
+  if (["/instances", "/dashboard", "/compute", "/settings"].includes(route)) {
+    const response = await fetch(new URL(route, appBaseUrl), {
+      redirect: "manual",
+    });
+    assert.equal(response.status, 307, `Expected ${route} to require authentication`);
+    assert.match(
+      response.headers.get("location") ?? "",
+      /\/auth\/sign-in/,
+      `Expected ${route} to redirect to sign-in`,
+    );
+    continue;
+  }
   const response = await fetch(new URL(route, appBaseUrl));
   assert.equal(response.status, 200, `Expected ${route} to render`);
   const html = await response.text();
