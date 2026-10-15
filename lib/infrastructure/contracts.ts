@@ -6,19 +6,22 @@ export type BlockStorageKind =
   | "persistent_instance_volume"
   | "network_volume";
 
-export type LifecycleStatus =
-  | "requested"
-  | "provisioning"
-  | "starting"
-  | "running"
-  | "stopping"
-  | "stopped"
-  | "restarting"
-  | "terminating"
-  | "terminated"
-  | "failed"
-  | "unknown"
-  | "reconciliation_required";
+export const LIFECYCLE_STATUSES = [
+  "requested",
+  "provisioning",
+  "starting",
+  "running",
+  "stopping",
+  "stopped",
+  "restarting",
+  "terminating",
+  "terminated",
+  "failed",
+  "unknown",
+  "reconciliation_required",
+] as const;
+
+export type LifecycleStatus = (typeof LIFECYCLE_STATUSES)[number];
 
 export type Availability = "available" | "unavailable" | "unknown";
 

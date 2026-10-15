@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+import { LIFECYCLE_STATUSES } from "../lib/infrastructure/contracts.ts";
 import {
   ConfigurationValidationError,
   decimalGigabytesToGiB,
@@ -93,6 +95,23 @@ const context = {
   now: new Date("2026-10-14T10:01:00.000Z"),
   availabilityMaxAgeMs: 5 * 60 * 1000,
 };
+
+test("Drizzle schema and forward migration share the canonical lifecycle states", () => {
+  const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+  const migration = readFileSync(
+    new URL("../drizzle/migrations/0001_align_compute_instance_lifecycle.sql", import.meta.url),
+    "utf8",
+  );
+  const quotedStates = LIFECYCLE_STATUSES.map((status) => `'${status}'`).join(", ");
+
+  assert.ok(schema.includes(`IN (${quotedStates})`));
+  assert.ok(migration.includes(`IN (${quotedStates})`));
+  assert.ok(migration.indexOf("DROP CONSTRAINT") < migration.indexOf("UPDATE \"compute_instances\""));
+  assert.ok(migration.indexOf("UPDATE \"compute_instances\"") < migration.indexOf("ADD CONSTRAINT"));
+  assert.match(migration, /WHEN 'deleting' THEN 'terminating'/);
+  assert.match(migration, /WHEN 'deleted' THEN 'terminated'/);
+  assert.doesNotMatch(migration, /\b(?:DROP TABLE|DELETE FROM)\b/i);
+});
 
 function expectValidationError(fn, code) {
   assert.throws(fn, (error) => {

@@ -14,6 +14,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import type { LifecycleStatus } from "@/lib/infrastructure/contracts";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -187,16 +188,7 @@ export const computeInstances = pgTable(
     providerResourceId: varchar("provider_resource_id", { length: 200 }),
     idempotencyKey: varchar("idempotency_key", { length: 200 }),
     lifecycleStatus: text("lifecycle_status")
-      .$type<
-        | "requested"
-        | "provisioning"
-        | "running"
-        | "stopping"
-        | "stopped"
-        | "failed"
-        | "deleting"
-        | "deleted"
-      >()
+      .$type<LifecycleStatus>()
       .default("requested")
       .notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -216,7 +208,7 @@ export const computeInstances = pgTable(
       .where(sql`${table.providerResourceId} IS NOT NULL`),
     check(
       "compute_instances_lifecycle_status_chk",
-      sql`${table.lifecycleStatus} IN ('requested', 'provisioning', 'running', 'stopping', 'stopped', 'failed', 'deleting', 'deleted')`,
+      sql`${table.lifecycleStatus} IN ('requested', 'provisioning', 'starting', 'running', 'stopping', 'stopped', 'restarting', 'terminating', 'terminated', 'failed', 'unknown', 'reconciliation_required')`,
     ),
     check(
       "compute_instances_provider_identity_chk",

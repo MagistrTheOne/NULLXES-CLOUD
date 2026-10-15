@@ -8,6 +8,13 @@
       "when": 1791986151354,
       "tag": "0000_clumsy_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792069438830,
+      "tag": "0001_align_compute_instance_lifecycle",
+      "breakpoints": true
     }
   ]
 }
