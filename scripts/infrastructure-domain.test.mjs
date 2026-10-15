@@ -145,6 +145,25 @@ test("refuses an unpublished catalog item", () => {
   );
 });
 
+test("pricing migration prevents overlapping published windows without rewriting existing rows", () => {
+  const migration = readFileSync(
+    new URL("../drizzle/migrations/0002_prevent_overlapping_published_prices.sql", import.meta.url),
+    "utf8",
+  );
+  const pricingRoute = readFileSync(
+    new URL("../app/api/pricing/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(migration, /CREATE EXTENSION IF NOT EXISTS btree_gist/i);
+  assert.match(migration, /EXCLUDE USING gist/i);
+  assert.match(migration, /tstzrange\(effective_from, effective_until, '\[\)'\) WITH &&/i);
+  assert.match(migration, /WHERE \(publication_status = 'published'\)/i);
+  assert.match(migration, /Cannot add pricing overlap protection/i);
+  assert.doesNotMatch(migration, /\b(UPDATE|DELETE)\s+public\.pricing_versions\b/i);
+  assert.match(pricingRoute, /pricingVersions\.effectiveFrom,\s*pricingVersions\.version/s);
+});
+
 test("does not treat an unknown provider inventory as available", () => {
   expectValidationError(
     () => validateResourceRequest(request, { ...product, availability: "unknown" }, quota, context),

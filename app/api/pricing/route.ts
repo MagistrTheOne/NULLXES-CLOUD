@@ -33,6 +33,8 @@ export async function GET(): Promise<Response> {
         pricingVersions.productCategory,
         pricingVersions.billingUnit,
         pricingVersions.currency,
+        pricingVersions.effectiveFrom,
+        pricingVersions.version,
       );
 
     return Response.json({ data: { pricing } });

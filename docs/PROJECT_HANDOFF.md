@@ -47,7 +47,7 @@ The original `app/api/health/route.ts` returned separate Postgres and Function s
 
 `pricing_versions` enforces version uniqueness but does not prevent overlapping effective periods for the same pricing key. `app/api/pricing/route.ts` returns every current match, so the result can be ambiguous.
 
-**Required:** define the complete price key and deterministic selection policy. Prevent overlapping published ranges at the database level where practical (for example, a PostgreSQL exclusion constraint over a normalized key and time range), with a forward-only migration. Preserve published-price immutability and existing rows. Add tests for adjacent, overlapping, open-ended, and future windows.
+**Implemented in source, migration not applied:** the current complete key is `product_category + billing_unit + currency`; the schema has no configuration/product ID to narrow pricing further. `/api/pricing` has stable ordering by key, effective start, and version. Migration `0002_prevent_overlapping_published_prices.sql` adds a partial GiST exclusion constraint over published half-open intervals (`[from, until)`), with unbounded `NULL` ends. It checks existing published data first and aborts before schema changes if it finds an overlap. It does not rewrite prices. The published-price immutability trigger remains in place. The Neon branch's extension privileges, existing data, and applied constraint are unverified; apply only to an explicitly selected non-production branch first.
 
 ### P1 — Registration abuse controls are not established by source review
 
@@ -107,4 +107,12 @@ Report each item separately as **implemented**, **configured**, and **verified**
 
 - Public `/api/health` now returns process liveness only with `Cache-Control: no-store` and no dependency details. Missing DB/function configuration no longer causes this route to throw because it no longer reads those variables.
 - The Neon smoke script continues to check PostgreSQL and Neon Function directly, then separately asserts the minimal app liveness response.
-- Infrastructure tests **19/19 passed**, typecheck passed, and `drizzle-kit check` passed. No live Neon/Function calls or production build were run. P1 pricing integrity and registration-abuse controls remain open.
+- Infrastructure tests **19/19 passed**, typecheck passed, and `drizzle-kit check` passed. No live Neon/Function calls or production build were run. (Counts reflect the health-fix commit; see the pricing progress below for current checks.)
+
+## P1 pricing integrity — 2026-10-15
+
+- Pricing key is the existing `(product_category, billing_unit, currency)` tuple; current schema has no per-configuration price key. The API uses stable key/start/version ordering.
+- Added forward-only migration `0002_prevent_overlapping_published_prices.sql`. It preflights all published windows and aborts before schema changes on existing conflicts, then installs a partial GiST exclusion constraint. Intervals are `[from, until)`, so adjacent windows work and `NULL` means open-ended. Published prices are not rewritten; the existing immutability trigger remains.
+- Added DB integration cases for adjacent and overlapping windows and schema validation for the new constraint. These require a non-production Neon branch and were not run. Migration is not applied; current branch data and `btree_gist` privileges remain unverified.
+- Local checks: infrastructure tests **20/20 passed**, TypeScript typecheck passed, and `drizzle-kit check` passed. Build and live DB checks were not run.
+- P1 registration-abuse controls remain open. Runpod adapter and GPU provisioning remain unimplemented and unverified.

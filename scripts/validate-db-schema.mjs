@@ -64,6 +64,17 @@ const immutabilityTrigger = await pool.query(
 assert.equal(immutabilityTrigger.rows[0]?.count, 1);
 console.log("Pricing validation: published price versions have an immutability trigger.");
 
+const pricingWindowConstraint = await pool.query(
+  `SELECT count(*)::int AS count
+   FROM information_schema.table_constraints
+   WHERE constraint_schema = 'public'
+     AND table_name = 'pricing_versions'
+     AND constraint_name = 'pricing_versions_published_window_excl'
+     AND constraint_type = 'EXCLUSION'`,
+);
+assert.equal(pricingWindowConstraint.rows[0]?.count, 1);
+console.log("Pricing validation: published effective windows cannot overlap for the same price key.");
+
 const migrationLog = await pool.query(
   `SELECT count(*)::int AS count
    FROM information_schema.tables

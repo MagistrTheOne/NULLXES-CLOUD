@@ -110,7 +110,12 @@ try {
   );
 
   const priceRows = [
-    [pricingIds[0], "published", new Date("2020-01-01T00:00:00Z"), null],
+    [
+      pricingIds[0],
+      "published",
+      new Date("2020-01-01T00:00:00Z"),
+      new Date("2099-01-01T00:00:00Z"),
+    ],
     [pricingIds[1], "published", new Date("2099-01-01T00:00:00Z"), null],
     [pricingIds[2], "published", new Date("2020-01-01T00:00:00Z"), new Date("2021-01-01T00:00:00Z")],
     [pricingIds[3], "draft", new Date("2020-01-01T00:00:00Z"), null],
@@ -121,7 +126,14 @@ try {
          (id, product_category, billing_unit, currency, rate, effective_from,
           effective_until, version, publication_status)
        VALUES ($1, 'compute', $2, 'ZZZ', '999.12345678', $3, $4, $5, $6)`,
-      [id, billingUnit, effectiveFrom, effectiveUntil, index + 1, status],
+      [
+        id,
+        index === 2 ? `${billingUnit}-expired` : billingUnit,
+        effectiveFrom,
+        effectiveUntil,
+        index + 1,
+        status,
+      ],
     );
   }
   await client.query("COMMIT");
@@ -163,6 +175,27 @@ try {
   await client.query("COMMIT");
   assert.equal(mutationError?.code, "55000");
   console.log("Pricing integrity: database rejects mutation of a published version.");
+
+  await client.query("BEGIN");
+  await client.query("SAVEPOINT overlapping_price_window");
+  let overlapError;
+  try {
+    await client.query(
+      `INSERT INTO public.pricing_versions
+         (id, product_category, billing_unit, currency, rate, effective_from,
+          effective_until, version, publication_status)
+       VALUES ($1, 'compute', $2, 'ZZZ', '1.00000000', '2098-01-01T00:00:00Z',
+          '2100-01-01T00:00:00Z', 100, 'published')`,
+      [randomUUID(), billingUnit],
+    );
+  } catch (error) {
+    overlapError = error;
+  }
+  await client.query("ROLLBACK TO SAVEPOINT overlapping_price_window");
+  await client.query("RELEASE SAVEPOINT overlapping_price_window");
+  await client.query("COMMIT");
+  assert.equal(overlapError?.code, "23P01");
+  console.log("Pricing integrity: overlapping published windows are rejected; adjacent windows are accepted.");
 
   const spoofedAccountResponse = await fetch(
     new URL(`/api/account?userId=${randomUUID()}`, appBaseUrl),

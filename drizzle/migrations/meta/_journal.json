@@ -15,6 +15,13 @@
       "when": 1792069438830,
       "tag": "0001_align_compute_instance_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "tag": "0002_prevent_overlapping_published_prices",
+      "when": 1792080000000,
+      "version": "7",
+      "breakpoints": true
     }
   ]
 }
