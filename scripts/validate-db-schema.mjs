@@ -69,7 +69,7 @@ const roleSchema = await pool.query(
    WHERE table_schema = 'public'
      AND table_name = 'customer_profiles'
      AND column_name = 'role'
-     AND column_default = '''USER'''::text
+     AND column_default = '''USER''::text'
      AND is_nullable = 'NO'`,
 );
 assert.equal(roleSchema.rows[0]?.count, 1);
@@ -95,11 +95,15 @@ console.log("Pricing validation: published price versions have an immutability t
 
 const pricingWindowConstraint = await pool.query(
   `SELECT count(*)::int AS count
-   FROM information_schema.table_constraints
-   WHERE constraint_schema = 'public'
-     AND table_name = 'pricing_versions'
-     AND constraint_name = 'pricing_versions_published_window_excl'
-     AND constraint_type = 'EXCLUSION'`,
+   FROM pg_catalog.pg_constraint AS constraint_row
+   JOIN pg_catalog.pg_class AS relation
+     ON relation.oid = constraint_row.conrelid
+   JOIN pg_catalog.pg_namespace AS namespace
+     ON namespace.oid = relation.relnamespace
+   WHERE namespace.nspname = 'public'
+     AND relation.relname = 'pricing_versions'
+     AND constraint_row.conname = 'pricing_versions_published_window_excl'
+     AND constraint_row.contype = 'x'`,
 );
 assert.equal(pricingWindowConstraint.rows[0]?.count, 1);
 console.log("Pricing validation: published effective windows cannot overlap for the same price key.");
