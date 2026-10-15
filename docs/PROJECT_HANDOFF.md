@@ -124,3 +124,10 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Optional IP limit is 12 attempts per hour, enabled only with `SIGNUP_TRUSTED_PROXY_HEADER=true`; the ingress must overwrite `x-nullxes-client-ip`. No deployment ingress was identified or configured, so IP limiting is not yet active.
 - Forward-only migration `0003_signup_abuse_rate_limits.sql` adds the counter table and index. It has not been applied. Live Neon Auth provider limits and trusted-domain configuration were not inspected; shared SMTP's existing rate limit is not a substitute for signup abuse protection.
 - Local checks: infrastructure tests **21/21 passed**, TypeScript typecheck passed, and `drizzle-kit check` passed. No build, DB integration, or external Auth/Neon request was run; no account was created.
+
+## Console layout refinement — 2026-10-15
+
+- The shadcn sidebar now spans the viewport height, stays in place while the main pane scrolls, and pins account controls/branding to the bottom. Its desktop width is 15rem to align the content edge with the supplied reference.
+- Overview now uses the installed shadcn `Card`, `Button`, `Badge`, `Alert`, `Empty`, and `Avatar` components. The existing server room image is used as a decorative hero backdrop; no provider inventory, spend, credit, billing, or usage values were added.
+- Desktop and mobile navigation share one route-aware shadcn navigation component, so the active page and button variants stay synchronized. Search and notifications were not added because no real actions/data for them are implemented.
+- TypeScript typecheck passed. No tests, app launch, browser screenshot, or production build were run.

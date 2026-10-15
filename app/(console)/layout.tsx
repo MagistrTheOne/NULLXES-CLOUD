@@ -1,14 +1,9 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import {
-  Cpu,
-  LayoutDashboard,
-  Server,
-  Settings,
-} from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { Button } from "@/components/ui/button";
+import { ConsoleNavigation } from "@/components/site/console-navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -27,13 +22,6 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-const navigation = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/instances", label: "Instances", icon: Server },
-  { href: "/compute", label: "Compute catalog", icon: Cpu },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
-
 export default async function ConsoleLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
@@ -43,8 +31,15 @@ export default async function ConsoleLayout({
   }
 
   return (
-    <SidebarProvider className="min-h-screen bg-background">
-      <Sidebar collapsible="none" className="hidden border-r border-border md:flex">
+    <SidebarProvider
+      className="min-h-svh bg-background"
+      style={{ "--sidebar-width": "15rem" } as CSSProperties}
+    >
+      <Sidebar
+        collapsible="none"
+        style={{ height: "100svh" }}
+        className="sticky top-0 hidden h-svh shrink-0 border-r border-border md:flex"
+      >
         <SidebarHeader className="border-b border-sidebar-border px-4 py-5">
           <Link href="/dashboard" className="space-y-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="block text-xs font-semibold tracking-[.18em] text-sidebar-foreground">
@@ -59,16 +54,7 @@ export default async function ConsoleLayout({
           <SidebarGroup>
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {navigation.map(({ href, label, icon: Icon }) => (
-                  <SidebarMenuItem key={href}>
-                    <SidebarMenuButton render={<Link href={href} />}>
-                      <Icon aria-hidden="true" />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
+              <ConsoleNavigation mode="sidebar" />
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
@@ -85,6 +71,14 @@ export default async function ConsoleLayout({
             </SidebarMenuItem>
           </SidebarMenu>
           <SignOutButton />
+          <div className="mt-3 flex items-end justify-between border-t border-sidebar-border px-2 pt-3">
+            <span className="font-display text-2xl leading-none text-sidebar-foreground">
+              N
+            </span>
+            <span className="text-[9px] uppercase tracking-[.2em] text-muted-foreground">
+              NULLXES CLOUD · 2026
+            </span>
+          </div>
         </SidebarFooter>
       </Sidebar>
 
@@ -96,22 +90,9 @@ export default async function ConsoleLayout({
             </Link>
             <SignOutButton />
           </div>
-          <nav aria-label="Console navigation" className="mt-3 flex gap-1 overflow-x-auto pb-1">
-            {navigation.map(({ href, label }) => (
-              <Button
-                key={href}
-                render={<Link href={href} />}
-                nativeButton={false}
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-              >
-                {label}
-              </Button>
-            ))}
-          </nav>
+          <ConsoleNavigation mode="mobile" />
         </header>
-        <div className="w-full px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
+        <div className="w-full min-w-0 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
           {children}
         </div>
       </SidebarInset>

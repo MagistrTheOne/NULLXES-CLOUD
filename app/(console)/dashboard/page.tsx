@@ -1,9 +1,25 @@
+import Image from "next/image";
 import Link from "next/link";
 import { count, desc, eq } from "drizzle-orm";
-import { ArrowRight, Cpu, ReceiptText, Server } from "lucide-react";
+import {
+  ArrowRight,
+  Cpu,
+  CreditCard,
+  ReceiptText,
+  Server,
+} from "lucide-react";
 import { redirect } from "next/navigation";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   computeConfigurations,
   computeInstances,
@@ -28,9 +44,7 @@ function statusLabel(status: string): string {
 
 export default async function DashboardPage() {
   const user = await getAuthenticatedUser();
-  if (!user) {
-    redirect("/auth/sign-in");
-  }
+  if (!user) redirect("/auth/sign-in");
 
   let overview: {
     instanceCount: number;
@@ -92,119 +106,183 @@ export default async function DashboardPage() {
   const summary = [
     {
       label: "Instance records",
-      value: overview
-        ? new Intl.NumberFormat("en").format(overview.instanceCount)
-        : "—",
-      description: overview
-        ? "Lifecycle records in your account"
-        : "Account data unavailable",
+      value: overview ? new Intl.NumberFormat("en").format(overview.instanceCount) : "—",
+      detail: overview ? "Account lifecycle records" : "Account data unavailable",
       icon: Server,
     },
     {
       label: "GPU inventory",
       value: "Not connected",
-      description: "Provider connectivity is not established",
+      detail: "Provider connectivity is not established",
       icon: Cpu,
     },
     {
-      label: "Usage & billing",
+      label: "Monthly spend",
       value: "Unavailable",
-      description: "Metering and billing are not implemented",
+      detail: "Usage metering is not implemented",
       icon: ReceiptText,
+    },
+    {
+      label: "Available credit",
+      value: "Unavailable",
+      detail: "No credit balance is maintained",
+      icon: CreditCard,
     },
   ];
 
   return (
-    <div className="space-y-7 pb-8">
-      <section className="grid gap-6 border-b border-border pb-7 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] xl:items-end">
-        <div>
-          <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">
-            Control plane / Overview
-          </p>
-          <h1 className="mt-3 text-4xl font-medium tracking-tight sm:text-5xl">
+    <div className="mx-auto w-full max-w-[1760px] space-y-5 pb-8">
+      <div className="flex min-h-9 items-center justify-between gap-4 border-b border-border pb-3">
+        <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">
+          Console <span className="px-1.5 text-border">/</span> Overview
+        </p>
+        <Button
+          render={<Link href="/settings" />}
+          nativeButton={false}
+          variant="ghost"
+          size="sm"
+          className="max-w-[220px] justify-start gap-2 px-1.5 text-muted-foreground"
+        >
+          <Avatar size="sm" className="border border-border">
+            <AvatarFallback className="bg-muted text-[10px] font-medium text-foreground">
+              {user.email?.slice(0, 1).toUpperCase() ?? "N"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">{user.email}</span>
+        </Button>
+      </div>
+
+      <section className="relative isolate grid min-h-[190px] items-center gap-5 overflow-hidden border-b border-border py-6 sm:min-h-[210px] sm:py-8 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <Image
+          src="/images/cluster.png"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          sizes="(min-width: 1280px) 70vw, 100vw"
+          className="-z-20 object-cover object-right opacity-55"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-background via-background/90 to-background/35"
+        />
+        <div className="max-w-3xl">
+          <h1 className="text-4xl font-medium tracking-tight sm:text-5xl lg:text-6xl">
             Your workspace
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Account resources and platform capabilities, in one place.
+            Manage account resources and review available platform capabilities.
           </p>
         </div>
 
-        <div className="flex min-h-24 items-start gap-4 border border-border bg-card p-4 sm:p-5">
-          <span
-            aria-hidden="true"
-            className="mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground"
-          />
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[.16em] text-muted-foreground">
-              Compute provider
-            </p>
-            <p className="text-sm font-medium">Not connected</p>
-            <p className="text-xs leading-5 text-muted-foreground">
-              Live inventory and resource controls are not available yet.
-            </p>
-          </div>
-        </div>
+        <Card className="border-border/80 bg-background/85 backdrop-blur-sm">
+          <CardContent className="flex items-start gap-3 p-4">
+            <span
+              aria-hidden="true"
+              className="mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[.16em] text-muted-foreground">
+                Compute provider
+              </p>
+              <p className="mt-1 text-sm font-medium">Not connected</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Live inventory and resource controls are not available yet.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {overview === null && (
-        <p role="status" className="text-xs text-muted-foreground">
-          Account records could not be loaded. Refresh the page to try again.
-        </p>
+        <Alert variant="destructive" className="items-center gap-3 px-4 py-3 sm:grid-cols-[auto_1fr_auto]">
+          <div>
+            <AlertTitle>Overview unavailable</AlertTitle>
+            <AlertDescription>
+              We couldn&apos;t load your instance records. Try again in a moment.
+            </AlertDescription>
+          </div>
+          <AlertAction className="static col-auto row-auto">
+            <Button
+              render={<Link href="/dashboard" />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+            >
+              Retry <ArrowRight aria-hidden="true" />
+            </Button>
+          </AlertAction>
+        </Alert>
       )}
 
-      <section aria-label="Workspace summary" className="grid gap-3 md:grid-cols-3">
-        {summary.map(({ label, value, description, icon: Icon }) => (
-          <article key={label} className="border border-border bg-card p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-4">
+      <section
+        aria-label="Workspace summary"
+        className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4"
+      >
+        {summary.map(({ label, value, detail, icon: Icon }) => (
+          <Card key={label} className="min-w-0">
+            <CardHeader className="flex-row items-center justify-between gap-3 pb-0">
               <p className="text-[10px] uppercase tracking-[.15em] text-muted-foreground">
                 {label}
               </p>
               <Icon aria-hidden="true" className="size-4 text-muted-foreground" />
-            </div>
-            <p className="mt-5 text-xl font-medium tracking-tight sm:text-2xl">{value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-          </article>
+            </CardHeader>
+            <CardContent>
+              <p className="mt-4 truncate text-xl font-medium tracking-tight sm:text-2xl">
+                {value}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+            </CardContent>
+          </Card>
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
-        <Card className="min-h-72">
-          <CardHeader className="flex-row items-start justify-between gap-4 border-b border-border pb-4">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.9fr)]">
+        <Card className="min-h-[300px]">
+          <CardHeader className="flex-row items-center justify-between gap-4 border-b border-border pb-4">
             <div className="space-y-1">
-              <CardTitle className="text-base">Recent instances</CardTitle>
+              <CardTitle>Recent instances</CardTitle>
               <p className="text-xs text-muted-foreground">
                 The latest lifecycle records attached to your account.
               </p>
             </div>
-            {overview && overview.instanceCount > 0 && (
-              <Link
-                href="/instances"
-                className="inline-flex h-8 shrink-0 items-center gap-2 border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            {overview !== null && overview.instanceCount > 0 && (
+              <Button
+                render={<Link href="/instances" />}
+                nativeButton={false}
+                variant="outline"
+                size="sm"
               >
-                View all <ArrowRight aria-hidden="true" className="size-3.5" />
-              </Link>
+                View all <ArrowRight aria-hidden="true" />
+              </Button>
             )}
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="flex min-h-[245px] flex-col justify-center p-0">
             {overview === null ? (
-              <div className="px-5 py-12 text-sm text-muted-foreground">
-                Instance records are unavailable right now.
-              </div>
+              <Empty className="min-h-[220px] border-0">
+                <EmptyHeader>
+                  <EmptyTitle>Records unavailable</EmptyTitle>
+                  <EmptyDescription>
+                    Account instance records could not be loaded.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : overview.recentInstances.length === 0 ? (
-              <div className="flex min-h-52 flex-col items-start justify-center gap-3 px-5 py-8 sm:px-7">
-                <div>
-                  <p className="text-sm font-medium">No instance records</p>
-                  <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
-                    This account has no compute lifecycle records. Published catalog entries do not confirm live provider capacity.
-                  </p>
-                </div>
-                <Link
-                  href="/compute"
-                  className="inline-flex h-8 items-center gap-2 border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              <Empty className="min-h-[220px] border-0">
+                <EmptyHeader>
+                  <EmptyTitle>No instances yet</EmptyTitle>
+                  <EmptyDescription>
+                    Your account has no compute lifecycle records. Published configurations do not confirm live capacity.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <Button
+                  render={<Link href="/compute" />}
+                  nativeButton={false}
+                  size="sm"
                 >
-                  Review catalog <ArrowRight aria-hidden="true" className="size-3.5" />
-                </Link>
-              </div>
+                  Browse compute catalog <ArrowRight aria-hidden="true" />
+                </Button>
+              </Empty>
             ) : (
               <div className="divide-y divide-border">
                 {overview.recentInstances.map((instance) => (
@@ -213,12 +291,16 @@ export default async function DashboardPage() {
                     className="grid gap-3 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{instance.configuration}</p>
+                      <p className="truncate text-sm font-medium">
+                        {instance.configuration}
+                      </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {instance.resourceType} · {formatDate(instance.createdAt)}
                       </p>
                     </div>
-                    <Badge variant={instance.status === "failed" ? "destructive" : "outline"}>
+                    <Badge
+                      variant={instance.status === "failed" ? "destructive" : "outline"}
+                    >
                       {statusLabel(instance.status)}
                     </Badge>
                   </div>
@@ -228,7 +310,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-1">
           <Card>
             <CardHeader className="flex-row items-center justify-between gap-3">
               <CardTitle>Compute catalog</CardTitle>
@@ -238,12 +320,14 @@ export default async function DashboardPage() {
               <p className="text-xs leading-5 text-muted-foreground">
                 Review published configurations. Availability is not verified live capacity.
               </p>
-              <Link
-                href="/compute"
-                className="inline-flex h-8 items-center gap-2 border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              <Button
+                render={<Link href="/compute" />}
+                nativeButton={false}
+                variant="outline"
+                size="sm"
               >
-                Open catalog <ArrowRight aria-hidden="true" className="size-3.5" />
-              </Link>
+                Open catalog <ArrowRight aria-hidden="true" />
+              </Button>
             </CardContent>
           </Card>
 
