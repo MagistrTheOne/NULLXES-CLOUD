@@ -164,6 +164,35 @@ test("pricing migration prevents overlapping published windows without rewriting
   assert.match(pricingRoute, /pricingVersions\.effectiveFrom,\s*pricingVersions\.version/s);
 });
 
+test("registration limits cover the server action and direct Neon Auth signup route", () => {
+  const limiter = readFileSync(
+    new URL("../lib/auth/signup-rate-limit.ts", import.meta.url),
+    "utf8",
+  );
+  const actions = readFileSync(
+    new URL("../lib/auth/actions.ts", import.meta.url),
+    "utf8",
+  );
+  const route = readFileSync(
+    new URL("../app/api/auth/[...path]/route.ts", import.meta.url),
+    "utf8",
+  );
+  const migration = readFileSync(
+    new URL("../drizzle/migrations/0003_signup_abuse_rate_limits.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(limiter, /createHmac\("sha256"/);
+  assert.match(limiter, /SIGNUP_TRUSTED_PROXY_HEADER/);
+  assert.match(limiter, /onConflictDoUpdate/);
+  assert.match(limiter, /EMAIL_LIMIT_PER_HOUR = 3/);
+  assert.match(limiter, /IP_LIMIT_PER_HOUR = 12/);
+  assert.match(actions, /consumeSignupRateLimit\(email, await headers\(\)\)/);
+  assert.match(route, /pathname\.endsWith\("\/sign-up\/email"\)/);
+  assert.match(route, /consumeSignupRateLimit\(email, request\.headers\)/);
+  assert.match(migration, /CREATE TABLE "signup_rate_limits"/);
+});
+
 test("does not treat an unknown provider inventory as available", () => {
   expectValidationError(
     () => validateResourceRequest(request, { ...product, availability: "unknown" }, quota, context),

@@ -49,9 +49,9 @@ The original `app/api/health/route.ts` returned separate Postgres and Function s
 
 **Implemented in source, migration not applied:** the current complete key is `product_category + billing_unit + currency`; the schema has no configuration/product ID to narrow pricing further. `/api/pricing` has stable ordering by key, effective start, and version. Migration `0002_prevent_overlapping_published_prices.sql` adds a partial GiST exclusion constraint over published half-open intervals (`[from, until)`), with unbounded `NULL` ends. It checks existing published data first and aborts before schema changes if it finds an overlap. It does not rewrite prices. The published-price immutability trigger remains in place. The Neon branch's extension privileges, existing data, and applied constraint are unverified; apply only to an explicitly selected non-production branch first.
 
-### P1 — Registration abuse controls are not established by source review
+### P1 — Registration abuse controls were not established by the original source review
 
-Signup delegates to Neon Auth; the application source does not establish an app-level rate limit. `README.md` notes shared SMTP is rate-limited and delivery has not been verified end to end. Inspect the current Neon Auth project's signup/email limits and trusted-domain configuration without exposing secrets. Add appropriate rate limiting/abuse controls at the supported provider or deployment boundary. Verify with a dedicated test account and non-production setup; do not create users on a production branch as a test.
+At the snapshot, signup delegated to Neon Auth with no app-level rate limit. The application now applies a database-backed limit of 3 attempts per normalized email per hour to both the signup Server Action and direct Neon Auth signup handler. It also supports 12 attempts per client IP per hour only when `SIGNUP_TRUSTED_PROXY_HEADER=true` and the ingress overwrites `x-nullxes-client-ip`. Migration `0003_signup_abuse_rate_limits.sql` is forward-only and has not been applied. Until that migration and a trusted proxy are configured, IP-based limiting is not active. Live Neon Auth signup/email limits and trusted domains remain unverified. Verify only with a dedicated test account and non-production setup; do not create users on a production branch as a test.
 
 ## Runpod integration sequence
 
@@ -93,7 +93,7 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Verified locally: infrastructure tests **18/18 passed**; TypeScript typecheck passed; `drizzle-kit check` passed.
 - Build was not run because the user-provided log indicates the development server may be active and Next dev/build both use `.next`. No DB connection, migration application, Auth flow, or provider request was run.
 - The user's log also showed Turbopack waiting for frequent filesystem changes in `node_modules`; homepage still returned 200. The log does not establish the cause of those file updates, so treat the warning as observed but undiagnosed.
-- **P1 health endpoint is closed in source. Pricing integrity and registration-abuse controls remain open.** Runpod adapter and GPU provisioning remain unimplemented and unverified.
+- **P1 health endpoint is closed in source.** Pricing and signup controls are implemented in source but their migrations are unapplied and runtime integration is unverified. Runpod adapter and GPU provisioning remain unimplemented and unverified.
 
 ## Dashboard update — 2026-10-15
 
@@ -115,4 +115,12 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Added forward-only migration `0002_prevent_overlapping_published_prices.sql`. It preflights all published windows and aborts before schema changes on existing conflicts, then installs a partial GiST exclusion constraint. Intervals are `[from, until)`, so adjacent windows work and `NULL` means open-ended. Published prices are not rewritten; the existing immutability trigger remains.
 - Added DB integration cases for adjacent and overlapping windows and schema validation for the new constraint. These require a non-production Neon branch and were not run. Migration is not applied; current branch data and `btree_gist` privileges remain unverified.
 - Local checks: infrastructure tests **20/20 passed**, TypeScript typecheck passed, and `drizzle-kit check` passed. Build and live DB checks were not run.
-- P1 registration-abuse controls remain open. Runpod adapter and GPU provisioning remain unimplemented and unverified.
+- P1 registration abuse source control is implemented; configuration and runtime checks remain open. Runpod adapter and GPU provisioning remain unimplemented and unverified.
+
+## P1 registration abuse controls — 2026-10-15
+
+- Added a durable database-backed signup counter. It uses HMAC-SHA256 identifiers derived from the existing auth cookie secret, stores no raw email/IP, enforces 3 attempts per normalized email per hour, and prunes up to 100 expired rows per signup attempt.
+- Both the custom signup Server Action and direct Neon Auth `POST /api/auth/sign-up/email` route consume the limit. A database failure fails closed with a safe response.
+- Optional IP limit is 12 attempts per hour, enabled only with `SIGNUP_TRUSTED_PROXY_HEADER=true`; the ingress must overwrite `x-nullxes-client-ip`. No deployment ingress was identified or configured, so IP limiting is not yet active.
+- Forward-only migration `0003_signup_abuse_rate_limits.sql` adds the counter table and index. It has not been applied. Live Neon Auth provider limits and trusted-domain configuration were not inspected; shared SMTP's existing rate limit is not a substitute for signup abuse protection.
+- Local checks: infrastructure tests **21/21 passed**, TypeScript typecheck passed, and `drizzle-kit check` passed. No build, DB integration, or external Auth/Neon request was run; no account was created.

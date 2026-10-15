@@ -37,6 +37,21 @@ export const customerProfiles = pgTable(
   ],
 );
 
+export const signupRateLimits = pgTable(
+  "signup_rate_limits",
+  {
+    identifierHash: varchar("identifier_hash", { length: 64 }).primaryKey(),
+    windowStartedAt: timestamp("window_started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    attemptCount: integer("attempt_count").default(1).notNull(),
+  },
+  (table) => [
+    index("signup_rate_limits_window_started_idx").on(table.windowStartedAt),
+    check("signup_rate_limits_attempt_count_positive_chk", sql`${table.attemptCount} > 0`),
+  ],
+);
+
 export const computeResourceTypes = pgTable(
   "compute_resource_types",
   {

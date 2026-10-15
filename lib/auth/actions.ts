@@ -1,6 +1,8 @@
 "use server";
 
 import { auth } from "@/lib/auth/server";
+import { consumeSignupRateLimit } from "@/lib/auth/signup-rate-limit";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type AuthActionState = {
@@ -71,6 +73,11 @@ export async function signUpWithEmail(
   }
 
   try {
+    const allowed = await consumeSignupRateLimit(email, await headers());
+    if (!allowed) {
+      return { error: "Too many account creation attempts. Please try again later." };
+    }
+
     const { data, error } = await auth.signUp.email({ name, email, password });
     if (error || !data?.user) {
       return {

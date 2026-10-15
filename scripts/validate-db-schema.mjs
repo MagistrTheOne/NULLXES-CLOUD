@@ -24,6 +24,7 @@ const expectedTables = [
   "compute_resource_types",
   "customer_profiles",
   "pricing_versions",
+  "signup_rate_limits",
 ];
 const tables = await pool.query(
   `SELECT table_name
@@ -34,7 +35,7 @@ const tableNames = new Set(tables.rows.map((row) => row.table_name));
 for (const tableName of expectedTables) {
   assert.ok(tableNames.has(tableName), `Missing public.${tableName}`);
 }
-console.log("Schema validation: all seven application tables exist.");
+console.log("Schema validation: all eight application tables exist.");
 
 const authUserId = await pool.query(
   `SELECT data_type
