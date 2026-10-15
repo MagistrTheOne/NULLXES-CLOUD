@@ -30,11 +30,8 @@ const healthResponse = await fetch(new URL("/api/health", appBaseUrl), {
 });
 assert.equal(healthResponse.status, 200);
 const health = await healthResponse.json();
-assert.deepEqual(health, {
-  status: "ok",
-  services: { postgres: "ok", functions: "ok" },
-});
-console.log("Application: /api/health passed all connected service checks.");
+assert.deepEqual(health, { status: "ok" });
+console.log("Application: /api/health returned the minimal liveness response.");
 
 const authResponse = await fetch(new URL("/api/auth/get-session", appBaseUrl), {
   headers: { Accept: "application/json" },

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { LIFECYCLE_STATUSES } from "../lib/infrastructure/contracts.ts";
+import { GET as getHealth } from "../app/api/health/route.ts";
 import {
   ConfigurationValidationError,
   decimalGigabytesToGiB,
@@ -120,6 +121,13 @@ function expectValidationError(fn, code) {
     return true;
   });
 }
+
+test("public health endpoint reports only process liveness", async () => {
+  const response = await getHealth();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), { status: "ok" });
+});
 
 test("normalizes verified catalog request and preserves separate storage", () => {
   const normalized = validateResourceRequest(request, product, quota, context);

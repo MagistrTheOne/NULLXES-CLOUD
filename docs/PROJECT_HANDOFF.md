@@ -39,9 +39,9 @@ The review inspected the working tree on 2026-10-15 without starting the app, ru
 
 **Required:** choose one canonical lifecycle vocabulary; align domain types, transition rules, Drizzle schema, migration, API/UI mappings, and persistence tests. Do not edit an already-applied migration. Add a reviewed forward-only migration that safely updates the constraint and maps any existing values without losing records. Check actual applied schema on an explicitly selected non-production branch before production rollout.
 
-### P1 — Public health endpoint reveals component-level health
+### P1 — Public health endpoint revealed component-level health (closed in source)
 
-`app/api/health/route.ts` returns separate Postgres and Function statuses without authentication. Keep a minimal public health response if needed; put detailed dependency diagnostics behind internal monitoring/authentication. Ensure missing configuration produces a safe structured response rather than an uncaught exception. Do not leak dependency URLs, credentials, or raw errors.
+The original `app/api/health/route.ts` returned separate Postgres and Function statuses without authentication. It now reports process liveness only (`{ status: "ok" }`) and does not touch dependency configuration. Operator-run `npm run test:neon` performs separate Postgres and Function checks. This endpoint change is covered by a local test; the external services were not queried during this fix.
 
 ### P1 — Published pricing windows can overlap
 
@@ -93,7 +93,7 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Verified locally: infrastructure tests **18/18 passed**; TypeScript typecheck passed; `drizzle-kit check` passed.
 - Build was not run because the user-provided log indicates the development server may be active and Next dev/build both use `.next`. No DB connection, migration application, Auth flow, or provider request was run.
 - The user's log also showed Turbopack waiting for frequent filesystem changes in `node_modules`; homepage still returned 200. The log does not establish the cause of those file updates, so treat the warning as observed but undiagnosed.
-- **P1 health, pricing, and registration-abuse controls remain open.** Runpod adapter and GPU provisioning remain unimplemented and unverified.
+- **P1 health endpoint is closed in source. Pricing integrity and registration-abuse controls remain open.** Runpod adapter and GPU provisioning remain unimplemented and unverified.
 
 ## Dashboard update — 2026-10-15
 
@@ -102,3 +102,9 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Database query failures remain a visible unavailable state and emit a concise server warning with the error class; the original `{}`-style development console error is removed.
 - Fixed Base UI `Button` link rendering warnings in the console mobile navigation, instance empty state, and quote link by marking those anchor render targets as non-native buttons.
 - TypeScript typecheck passed; infrastructure tests **18/18 passed**. No browser visual inspection or production build was run. The database failure shown in the supplied screenshot was not independently diagnosed, so Overview data can still be unavailable until the runtime DB issue is resolved.
+
+## P1 health endpoint — 2026-10-15
+
+- Public `/api/health` now returns process liveness only with `Cache-Control: no-store` and no dependency details. Missing DB/function configuration no longer causes this route to throw because it no longer reads those variables.
+- The Neon smoke script continues to check PostgreSQL and Neon Function directly, then separately asserts the minimal app liveness response.
+- Infrastructure tests **19/19 passed**, typecheck passed, and `drizzle-kit check` passed. No live Neon/Function calls or production build were run. P1 pricing integrity and registration-abuse controls remain open.

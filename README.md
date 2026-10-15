@@ -63,7 +63,7 @@ Use the local `.env` file for Neon-managed values (`neon env pull`) and `NEON_AU
 
 ## Neon integration
 
-- `/api/health` checks PostgreSQL and the deployed `hello` Function without exposing service errors or credentials.
+- `/api/health` is a public process-liveness endpoint and returns only `{ "status": "ok" }`; it does not probe or reveal dependency health. The operator-run `npm run test:neon` script checks PostgreSQL and the deployed `hello` Function separately.
 - `/api/auth/[...path]` proxies Neon Managed Auth. Sign-in, sign-up, password recovery, and email verification use the existing managed auth provider; `/instances` requires an authenticated session.
 - Application database requests use the pooled `DATABASE_URL`; Drizzle Kit manages the application-owned schema through reviewed migrations and a direct connection.
 - Neon Object Storage is provisioned but is not connected to the app yet. No AWS SDK, AWS account, storage API, or storage credentials are used by application code.
