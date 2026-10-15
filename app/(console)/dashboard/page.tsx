@@ -152,7 +152,7 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      <section className="relative isolate grid min-h-[190px] items-center gap-5 overflow-hidden border-b border-border py-6 sm:min-h-[210px] sm:py-8 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <section className="relative isolate grid min-h-[190px] items-center overflow-hidden border-b border-border py-6 sm:min-h-[210px] sm:py-8">
         <Image
           src="/images/cluster.png"
           alt=""
@@ -175,23 +175,6 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <Card className="border-border/80 bg-background/85 backdrop-blur-sm">
-          <CardContent className="flex items-start gap-3 p-4">
-            <span
-              aria-hidden="true"
-              className="mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground"
-            />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[.16em] text-muted-foreground">
-                Compute provider
-              </p>
-              <p className="mt-1 text-sm font-medium">Not connected</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Live inventory and resource controls are not available yet.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </section>
 
       {overview === null && (
