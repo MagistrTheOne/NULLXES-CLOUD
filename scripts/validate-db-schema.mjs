@@ -23,6 +23,8 @@ const expectedTables = [
   "compute_regions",
   "compute_resource_types",
   "customer_profiles",
+  "organizations",
+  "organization_memberships",
   "pricing_versions",
   "signup_rate_limits",
 ];
@@ -35,7 +37,7 @@ const tableNames = new Set(tables.rows.map((row) => row.table_name));
 for (const tableName of expectedTables) {
   assert.ok(tableNames.has(tableName), `Missing public.${tableName}`);
 }
-console.log("Schema validation: all eight application tables exist.");
+console.log("Schema validation: all ten application tables exist.");
 
 const authUserId = await pool.query(
   `SELECT data_type
@@ -50,10 +52,16 @@ const constraints = await pool.query(
    FROM information_schema.table_constraints
    WHERE table_schema = 'public'
      AND constraint_type = 'FOREIGN KEY'
-     AND table_name IN ('compute_configurations', 'catalog_listings', 'compute_instances')`,
+     AND table_name IN (
+       'compute_configurations',
+       'catalog_listings',
+       'compute_instances',
+       'organizations',
+       'organization_memberships'
+     )`,
 );
-assert.equal(constraints.rows[0]?.count, 5);
-console.log("Integrity validation: all five ownership/catalog foreign keys exist.");
+assert.equal(constraints.rows[0]?.count, 9);
+console.log("Integrity validation: all nine ownership/catalog foreign keys exist.");
 
 const roleSchema = await pool.query(
   `SELECT count(*)::int AS count

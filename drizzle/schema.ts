@@ -16,6 +16,7 @@ import {
 import { sql } from "drizzle-orm";
 import type { LifecycleStatus } from "@/lib/infrastructure/contracts";
 import type { ApplicationRole } from "@/lib/auth/roles";
+import type { OrganizationRole } from "@/lib/auth/organization-policy";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -40,6 +41,62 @@ export const customerProfiles = pgTable(
       "customer_profiles_role_chk",
       sql`${table.role} IN ('CEO', 'ADMIN', 'MANAGER', 'VIP', 'USER')`,
     ),
+  ],
+);
+
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 160 }).notNull(),
+    personalOwnerProfileId: uuid("personal_owner_profile_id"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("organizations_personal_owner_uidx").on(
+      table.personalOwnerProfileId,
+    ),
+    check("organizations_name_nonempty_chk", sql`length(trim(${table.name})) > 0`),
+    foreignKey({
+      columns: [table.personalOwnerProfileId],
+      foreignColumns: [customerProfiles.id],
+      name: "organizations_personal_owner_profile_fk",
+    }).onDelete("restrict"),
+  ],
+);
+
+export const organizationMemberships = pgTable(
+  "organization_memberships",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    profileId: uuid("profile_id").notNull(),
+    role: text("role").$type<OrganizationRole>().default("member").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("organization_memberships_org_profile_uidx").on(
+      table.organizationId,
+      table.profileId,
+    ),
+    uniqueIndex("organization_memberships_single_owner_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.role} = 'owner'`),
+    index("organization_memberships_profile_idx").on(table.profileId),
+    check(
+      "organization_memberships_role_chk",
+      sql`${table.role} IN ('owner', 'admin', 'operator', 'member', 'billing_viewer')`,
+    ),
+    foreignKey({
+      columns: [table.organizationId],
+      foreignColumns: [organizations.id],
+      name: "organization_memberships_organization_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.profileId],
+      foreignColumns: [customerProfiles.id],
+      name: "organization_memberships_profile_fk",
+    }).onDelete("restrict"),
   ],
 );
 
@@ -204,6 +261,7 @@ export const computeInstances = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     profileId: uuid("profile_id").notNull(),
+    organizationId: uuid("organization_id").notNull(),
     configurationId: uuid("configuration_id").notNull(),
     provider: varchar("provider", { length: 80 }),
     providerResourceId: varchar("provider_resource_id", { length: 200 }),
@@ -218,6 +276,10 @@ export const computeInstances = pgTable(
   (table) => [
     index("compute_instances_profile_created_idx").on(
       table.profileId,
+      table.createdAt,
+    ),
+    index("compute_instances_organization_created_idx").on(
+      table.organizationId,
       table.createdAt,
     ),
     index("compute_instances_configuration_idx").on(table.configurationId),
@@ -239,6 +301,11 @@ export const computeInstances = pgTable(
       columns: [table.profileId],
       foreignColumns: [customerProfiles.id],
       name: "compute_instances_profile_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.organizationId],
+      foreignColumns: [organizations.id],
+      name: "compute_instances_organization_fk",
     }).onDelete("restrict"),
     foreignKey({
       columns: [table.configurationId],

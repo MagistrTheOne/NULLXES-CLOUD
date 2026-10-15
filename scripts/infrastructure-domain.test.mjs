@@ -17,6 +17,10 @@ import {
   retryDelayMs,
   safeFailureResponse,
 } from "../lib/infrastructure/reliability.ts";
+import {
+  canAccessOrganizationResource,
+  hasOrganizationPermission,
+} from "../lib/auth/organization-policy.ts";
 
 const product = {
   provider: "unselected-provider",
@@ -341,4 +345,68 @@ test("maps provider failures to safe structured responses", () => {
     },
   });
   assert.equal(JSON.stringify(response).includes("internal-operation"), false);
+});
+
+test("organization permissions are scoped and deny unrecognized platform roles", () => {
+  assert.equal(hasOrganizationPermission("owner", "ownership:transfer"), true);
+  assert.equal(hasOrganizationPermission("admin", "members:manage"), true);
+  assert.equal(hasOrganizationPermission("admin", "ownership:transfer"), false);
+  assert.equal(hasOrganizationPermission("operator", "instances:operate"), true);
+  assert.equal(hasOrganizationPermission("operator", "billing:read"), false);
+  assert.equal(hasOrganizationPermission("member", "instances:read"), true);
+  assert.equal(hasOrganizationPermission("member", "instances:create"), false);
+  assert.equal(hasOrganizationPermission("billing_viewer", "billing:read"), true);
+  assert.equal(hasOrganizationPermission("billing_viewer", "instances:read"), false);
+  assert.equal(hasOrganizationPermission("CEO", "ownership:transfer"), false);
+  assert.equal(hasOrganizationPermission("VIP", "instances:read"), false);
+  assert.equal(hasOrganizationPermission(undefined, "instances:read"), false);
+  assert.equal(
+    canAccessOrganizationResource("org-a", "org-a", "member", "instances:read"),
+    true,
+  );
+  assert.equal(
+    canAccessOrganizationResource("org-a", "org-b", "owner", "instances:read"),
+    false,
+  );
+  assert.equal(
+    canAccessOrganizationResource(null, "org-a", "owner", "instances:read"),
+    false,
+  );
+});
+
+test("organization migration backfills before requiring organization ownership", () => {
+  const migration = readFileSync(
+    new URL("../drizzle/migrations/0005_add_organizations_and_memberships.sql", import.meta.url),
+    "utf8",
+  );
+  const addColumn = migration.indexOf('ADD COLUMN "organization_id" uuid;');
+  const createPersonalOrganizations = migration.indexOf('INSERT INTO "organizations"');
+  const backfillInstances = migration.indexOf('UPDATE "compute_instances" AS instance');
+  const requireOrganization = migration.indexOf('ALTER COLUMN "organization_id" SET NOT NULL');
+  assert.ok(addColumn >= 0);
+  assert.ok(createPersonalOrganizations > addColumn);
+  assert.ok(backfillInstances > createPersonalOrganizations);
+  assert.ok(requireOrganization > backfillInstances);
+  assert.equal(/\bDROP\s+(TABLE|COLUMN)\b/i.test(migration), false);
+});
+
+test("instance reads verify organization membership before selecting tenant records", () => {
+  const route = readFileSync(
+    new URL("../app/api/instances/route.ts", import.meta.url),
+    "utf8",
+  );
+  const authorizationCheck = route.indexOf('await authorizeOrganization(');
+  const tenantSelect = route.indexOf('const instances = await db');
+  assert.ok(authorizationCheck >= 0);
+  assert.ok(tenantSelect > authorizationCheck);
+  assert.match(route, /"instances:read"/);
+  assert.match(route, /computeInstances\.organizationId, membership\.organizationId/);
+  assert.match(route, /status: 404/);
+
+  const access = readFileSync(
+    new URL("../lib/auth/organization-access.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(access, /eq\(customerProfiles\.authUserId, authUserId\)/);
+  assert.match(access, /eq\(organizationMemberships\.organizationId, organizationId\)/);
 });

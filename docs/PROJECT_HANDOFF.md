@@ -138,3 +138,12 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Added server-only role lookup and helpers. Internal notices are allowed only for CEO, Admin, and Manager; missing profiles resolve to `USER`. Elevated roles require a trusted operator to update the application database directly after migration.
 - Disabled the Next.js development indicator. It is framework-owned UI and cannot be gated by application roles. The app has no separate developer-notice feature to role-gate yet.
 - Added forward-only migration `0004_add_customer_roles.sql`; it preserves profile IDs and assigns existing profiles the least privileged role. Migration is not applied to Neon and elevated users have not been assigned.
+
+## Multi-tenant Control Plane foundation — 2026-10-15
+
+- Work is isolated on local branch `feat/control-plane-foundation`; do not merge or push to `main` until local and connected GitHub histories are reconciled. Connected GitHub `main` does not contain local commits `bb0e94e` or `09a4a1e`; direct Git HTTPS push previously failed due missing local credentials.
+- Added organizations and organization membership schema. Membership permissions are organization-scoped (`owner`, `admin`, `operator`, `member`, `billing_viewer`) and deny by default. Global account labels (`CEO`, `ADMIN`, `MANAGER`, `VIP`, `USER`) do not authorize organization resources; no CEO bypass exists.
+- Added `0005_add_organizations_and_memberships.sql`. It backfills one personal organization and owner membership per existing profile, maps every existing instance to the personal organization using its existing `profile_id`, then requires `organization_id`. It preserves instance/profile IDs and records. Migration is unapplied.
+- `/api/account` idempotently ensures a personal organization and owner membership. `/api/instances` defaults to that organization; an explicit organization ID requires server-side membership and `instances:read`. Dashboard reads are scoped to the personal organization. No team invite/member-management API or UI exists yet.
+- Updated DB schema validation for ten application tables and nine ownership/catalog foreign keys. Added unit tests for role boundaries, unknown role denial, cross-organization denial, and migration backfill order.
+- Local checks: TypeScript passed; infrastructure/policy tests **24/24 passed**; `drizzle-kit check` passed; `git diff --check` passed. No Neon query, migration application, runtime Auth flow, app launch, browser test, provider request, or production build was run.

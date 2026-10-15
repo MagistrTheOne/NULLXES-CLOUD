@@ -3,14 +3,17 @@ import {
   computeConfigurations,
   computeInstances,
   computeResourceTypes,
-  customerProfiles,
 } from "@/drizzle/schema";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import {
+  authorizeOrganization,
+  ensurePersonalOrganizationForUser,
+} from "@/lib/auth/organization-access";
 import { db } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -25,6 +28,36 @@ export async function GET(): Promise<Response> {
       );
     }
 
+    const requestedOrganizationId = new URL(request.url).searchParams.get(
+      "organization_id",
+    );
+    if (
+      requestedOrganizationId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        requestedOrganizationId,
+      )
+    ) {
+      return Response.json(
+        { error: { code: "ORGANIZATION_NOT_FOUND", message: "Organization not found." } },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const personal = await ensurePersonalOrganizationForUser(user.id);
+    const organizationId = requestedOrganizationId ?? personal.defaultOrganizationId;
+    const membership = await authorizeOrganization(
+      user.id,
+      organizationId,
+      "instances:read",
+    );
+    if (!membership) {
+      // Return the same response for unknown organizations and non-members.
+      return Response.json(
+        { error: { code: "ORGANIZATION_NOT_FOUND", message: "Organization not found." } },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     const instances = await db
       .select({
         id: computeInstances.id,
@@ -35,10 +68,6 @@ export async function GET(): Promise<Response> {
       })
       .from(computeInstances)
       .innerJoin(
-        customerProfiles,
-        eq(computeInstances.profileId, customerProfiles.id),
-      )
-      .innerJoin(
         computeConfigurations,
         eq(computeInstances.configurationId, computeConfigurations.id),
       )
@@ -46,10 +75,13 @@ export async function GET(): Promise<Response> {
         computeResourceTypes,
         eq(computeConfigurations.resourceTypeId, computeResourceTypes.id),
       )
-      .where(eq(customerProfiles.authUserId, user.id))
+      .where(eq(computeInstances.organizationId, membership.organizationId))
       .orderBy(desc(computeInstances.createdAt));
 
-    return Response.json({ data: { instances } });
+    return Response.json(
+      { data: { instances } },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     console.error("User instance request failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",

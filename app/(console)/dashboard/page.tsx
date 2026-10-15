@@ -24,9 +24,9 @@ import {
   computeConfigurations,
   computeInstances,
   computeResourceTypes,
-  customerProfiles,
 } from "@/drizzle/schema";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { ensurePersonalOrganizationForUser } from "@/lib/auth/organization-access";
 import { db } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
@@ -58,16 +58,18 @@ export default async function DashboardPage() {
   } | null = null;
 
   try {
-    const ownerFilter = eq(customerProfiles.authUserId, user.id);
+    const { defaultOrganizationId } = await ensurePersonalOrganizationForUser(
+      user.id,
+    );
+    const organizationFilter = eq(
+      computeInstances.organizationId,
+      defaultOrganizationId,
+    );
     const [countRows, recentInstances] = await Promise.all([
       db
         .select({ value: count() })
         .from(computeInstances)
-        .innerJoin(
-          customerProfiles,
-          eq(computeInstances.profileId, customerProfiles.id),
-        )
-        .where(ownerFilter),
+        .where(organizationFilter),
       db
         .select({
           id: computeInstances.id,
@@ -78,10 +80,6 @@ export default async function DashboardPage() {
         })
         .from(computeInstances)
         .innerJoin(
-          customerProfiles,
-          eq(computeInstances.profileId, customerProfiles.id),
-        )
-        .innerJoin(
           computeConfigurations,
           eq(computeInstances.configurationId, computeConfigurations.id),
         )
@@ -89,7 +87,7 @@ export default async function DashboardPage() {
           computeResourceTypes,
           eq(computeConfigurations.resourceTypeId, computeResourceTypes.id),
         )
-        .where(ownerFilter)
+        .where(organizationFilter)
         .orderBy(desc(computeInstances.createdAt))
         .limit(5),
     ]);

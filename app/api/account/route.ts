@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/server/db";
-import { customerProfiles } from "@/drizzle/schema";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { ensurePersonalOrganizationForUser } from "@/lib/auth/organization-access";
 
 export const dynamic = "force-dynamic";
 
@@ -20,47 +18,23 @@ export async function GET(): Promise<Response> {
       );
     }
 
-    const [created] = await db
-      .insert(customerProfiles)
-      .values({ authUserId: user.id })
-      .onConflictDoNothing({ target: customerProfiles.authUserId })
-      .returning({
-        id: customerProfiles.id,
-        role: customerProfiles.role,
-        createdAt: customerProfiles.createdAt,
-        updatedAt: customerProfiles.updatedAt,
-      });
+    const profile = await ensurePersonalOrganizationForUser(user.id);
 
-    const profile =
-      created ??
-      (
-        await db
-          .select({
-            id: customerProfiles.id,
-            role: customerProfiles.role,
-            createdAt: customerProfiles.createdAt,
-            updatedAt: customerProfiles.updatedAt,
-          })
-          .from(customerProfiles)
-          .where(eq(customerProfiles.authUserId, user.id))
-          .limit(1)
-      )[0];
-
-    if (!profile) {
-      throw new Error("Profile upsert completed without a retrievable row.");
-    }
-
-    return Response.json({
-      data: {
-        account: {
-          id: profile.id,
-          displayName: user.name,
-          role: profile.role,
-          createdAt: profile.createdAt,
-          updatedAt: profile.updatedAt,
+    return Response.json(
+      {
+        data: {
+          account: {
+            id: profile.profileId,
+            displayName: user.name,
+            role: profile.accountRole,
+            defaultOrganizationId: profile.defaultOrganizationId,
+            createdAt: profile.createdAt,
+            updatedAt: profile.updatedAt,
+          },
         },
       },
-    });
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     console.error("Account profile request failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",
