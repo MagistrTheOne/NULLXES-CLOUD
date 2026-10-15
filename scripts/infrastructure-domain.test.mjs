@@ -350,6 +350,11 @@ test("maps provider failures to safe structured responses", () => {
 test("organization permissions are scoped and deny unrecognized platform roles", () => {
   assert.equal(hasOrganizationPermission("owner", "ownership:transfer"), true);
   assert.equal(hasOrganizationPermission("admin", "members:manage"), true);
+  assert.equal(hasOrganizationPermission("owner", "audit:read"), true);
+  assert.equal(hasOrganizationPermission("admin", "audit:read"), true);
+  assert.equal(hasOrganizationPermission("operator", "audit:read"), false);
+  assert.equal(hasOrganizationPermission("member", "audit:read"), false);
+  assert.equal(hasOrganizationPermission("billing_viewer", "audit:read"), false);
   assert.equal(hasOrganizationPermission("admin", "ownership:transfer"), false);
   assert.equal(hasOrganizationPermission("operator", "instances:operate"), true);
   assert.equal(hasOrganizationPermission("operator", "billing:read"), false);
@@ -436,15 +441,40 @@ test("instance reads verify organization membership before selecting tenant reco
   );
   assert.match(access, /eq\(customerProfiles\.authUserId, authUserId\)/);
   assert.match(access, /eq\(organizationMemberships\.organizationId, organizationId\)/);
+  assert.match(access, /db\.transaction\(async \(tx\)/);
+  assert.match(access, /tx\.insert\(auditLogs\)/);
+  assert.match(access, /organization\.personal_workspace\.created/);
 
   const accountRoute = readFileSync(
     new URL("../app/api/account/route.ts", import.meta.url),
     "utf8",
   );
   assert.match(accountRoute, /Cache-Control": "private, no-store"/);
+  assert.match(accountRoute, /"X-Request-ID": requestId/);
 
   // No write route currently exists. Keep this test explicit so adding one
   // requires a separate authorization and ownership review.
   assert.match(route, /export async function GET\(/);
   assert.doesNotMatch(route, /export async function (POST|PUT|PATCH|DELETE)\(/);
+});
+
+test("audit reads require organization audit permission before querying scoped events", () => {
+  const route = readFileSync(
+    new URL("../app/api/organizations/[organizationId]/audit/route.ts", import.meta.url),
+    "utf8",
+  );
+  const authorization = route.indexOf('"audit:read"');
+  const query = route.indexOf("const events = await db");
+  assert.ok(authorization >= 0);
+  assert.ok(query > authorization);
+  assert.match(route, /auditLogs\.organizationId, membership\.organizationId/);
+  assert.match(route, /limit\(limit\)/);
+  assert.match(route, /MAX_PAGE_SIZE = 100/);
+
+  const migration = readFileSync(
+    new URL("../drizzle/migrations/0006_append_only_audit_log.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(migration, /BEFORE UPDATE OR DELETE ON public\.audit_logs/);
+  assert.match(migration, /BEFORE TRUNCATE ON public\.audit_logs/);
 });

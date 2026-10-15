@@ -17,6 +17,7 @@ if (databaseHost.includes("-pooler")) {
 
 const pool = new Pool({ connectionString: databaseUrl });
 const expectedTables = [
+  "audit_logs",
   "catalog_listings",
   "compute_configurations",
   "compute_instances",
@@ -37,7 +38,7 @@ const tableNames = new Set(tables.rows.map((row) => row.table_name));
 for (const tableName of expectedTables) {
   assert.ok(tableNames.has(tableName), `Missing public.${tableName}`);
 }
-console.log("Schema validation: all ten application tables exist.");
+console.log("Schema validation: all eleven application tables exist.");
 
 const authUserId = await pool.query(
   `SELECT data_type
@@ -57,11 +58,30 @@ const constraints = await pool.query(
        'catalog_listings',
        'compute_instances',
        'organizations',
-       'organization_memberships'
+       'organization_memberships',
+       'audit_logs'
      )`,
 );
-assert.equal(constraints.rows[0]?.count, 9);
-console.log("Integrity validation: all nine ownership/catalog foreign keys exist.");
+assert.equal(constraints.rows[0]?.count, 11);
+console.log("Integrity validation: all eleven ownership/catalog/audit foreign keys exist.");
+
+const auditTriggers = await pool.query(
+  `SELECT count(DISTINCT trigger_row.tgname)::int AS count
+   FROM pg_catalog.pg_trigger AS trigger_row
+   JOIN pg_catalog.pg_class AS relation
+     ON relation.oid = trigger_row.tgrelid
+   JOIN pg_catalog.pg_namespace AS namespace
+     ON namespace.oid = relation.relnamespace
+   WHERE namespace.nspname = 'public'
+     AND relation.relname = 'audit_logs'
+     AND NOT trigger_row.tgisinternal
+     AND trigger_row.tgname IN (
+       'audit_logs_reject_row_mutation',
+       'audit_logs_reject_truncate'
+     )`,
+);
+assert.equal(auditTriggers.rows[0]?.count, 2);
+console.log("Audit validation: row changes and truncate are rejected by database triggers.");
 
 const roleSchema = await pool.query(
   `SELECT count(*)::int AS count

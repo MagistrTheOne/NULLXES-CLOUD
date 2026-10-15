@@ -256,6 +256,59 @@ export const pricingVersions = pgTable(
   ],
 );
 
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    actorProfileId: uuid("actor_profile_id"),
+    actorRole: varchar("actor_role", { length: 32 })
+      .$type<OrganizationRole | "system">()
+      .notNull(),
+    action: varchar("action", { length: 120 }).notNull(),
+    outcome: text("outcome").$type<"success" | "denied" | "failure">().notNull(),
+    resourceType: varchar("resource_type", { length: 80 }).notNull(),
+    resourceId: varchar("resource_id", { length: 200 }).notNull(),
+    requestId: uuid("request_id").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, string | number | boolean | null>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("audit_logs_organization_created_idx").on(
+      table.organizationId,
+      table.createdAt,
+    ),
+    index("audit_logs_actor_created_idx").on(table.actorProfileId, table.createdAt),
+    index("audit_logs_request_id_idx").on(table.requestId),
+    check(
+      "audit_logs_outcome_chk",
+      sql`${table.outcome} IN ('success', 'denied', 'failure')`,
+    ),
+    check(
+      "audit_logs_actor_role_chk",
+      sql`${table.actorRole} IN ('owner', 'admin', 'operator', 'member', 'billing_viewer', 'system')`,
+    ),
+    check(
+      "audit_logs_metadata_object_chk",
+      sql`jsonb_typeof(${table.metadata}) = 'object'`,
+    ),
+    check(
+      "audit_logs_action_chk",
+      sql`${table.action} ~ '^[a-z][a-z0-9_.:-]{1,119}$'`,
+    ),
+    foreignKey({
+      columns: [table.organizationId],
+      foreignColumns: [organizations.id],
+      name: "audit_logs_organization_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.actorProfileId],
+      foreignColumns: [customerProfiles.id],
+      name: "audit_logs_actor_profile_fk",
+    }).onDelete("restrict"),
+  ],
+);
+
 export const computeInstances = pgTable(
   "compute_instances",
   {

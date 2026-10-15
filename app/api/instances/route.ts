@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import {
   computeConfigurations,
@@ -14,6 +15,7 @@ import { db } from "@/lib/server/db";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request): Promise<Response> {
+  const requestId = randomUUID();
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -24,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
             message: "Authentication is required to access these instances.",
           },
         },
-        { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        { status: 401, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
       );
     }
 
@@ -39,11 +41,11 @@ export async function GET(request: Request): Promise<Response> {
     ) {
       return Response.json(
         { error: { code: "ORGANIZATION_NOT_FOUND", message: "Organization not found." } },
-        { status: 404, headers: { "Cache-Control": "no-store" } },
+        { status: 404, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
       );
     }
 
-    const personal = await ensurePersonalOrganizationForUser(user.id);
+    const personal = await ensurePersonalOrganizationForUser(user.id, requestId);
     const organizationId = requestedOrganizationId ?? personal.defaultOrganizationId;
     const membership = await authorizeOrganization(
       user.id,
@@ -54,7 +56,7 @@ export async function GET(request: Request): Promise<Response> {
       // Return the same response for unknown organizations and non-members.
       return Response.json(
         { error: { code: "ORGANIZATION_NOT_FOUND", message: "Organization not found." } },
-        { status: 404, headers: { "Cache-Control": "no-store" } },
+        { status: 404, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
       );
     }
 
@@ -80,7 +82,7 @@ export async function GET(request: Request): Promise<Response> {
 
     return Response.json(
       { data: { instances } },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
     );
   } catch (error) {
     console.error("User instance request failed", {
@@ -93,7 +95,7 @@ export async function GET(request: Request): Promise<Response> {
           message: "Instances are temporarily unavailable.",
         },
       },
-      { status: 500, headers: { "Cache-Control": "private, no-store" } },
+      { status: 500, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
     );
   }
 }

@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { ensurePersonalOrganizationForUser } from "@/lib/auth/organization-access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
+  const requestId = randomUUID();
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -14,11 +16,11 @@ export async function GET(): Promise<Response> {
             message: "Authentication is required to access this account.",
           },
         },
-        { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        { status: 401, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
       );
     }
 
-    const profile = await ensurePersonalOrganizationForUser(user.id);
+    const profile = await ensurePersonalOrganizationForUser(user.id, requestId);
 
     return Response.json(
       {
@@ -33,7 +35,7 @@ export async function GET(): Promise<Response> {
           },
         },
       },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
     );
   } catch (error) {
     console.error("Account profile request failed", {
@@ -46,7 +48,7 @@ export async function GET(): Promise<Response> {
           message: "Account information is temporarily unavailable.",
         },
       },
-      { status: 500, headers: { "Cache-Control": "private, no-store" } },
+      { status: 500, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
     );
   }
 }
