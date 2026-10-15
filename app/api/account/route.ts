@@ -26,6 +26,7 @@ export async function GET(): Promise<Response> {
       .onConflictDoNothing({ target: customerProfiles.authUserId })
       .returning({
         id: customerProfiles.id,
+        role: customerProfiles.role,
         createdAt: customerProfiles.createdAt,
         updatedAt: customerProfiles.updatedAt,
       });
@@ -36,6 +37,7 @@ export async function GET(): Promise<Response> {
         await db
           .select({
             id: customerProfiles.id,
+            role: customerProfiles.role,
             createdAt: customerProfiles.createdAt,
             updatedAt: customerProfiles.updatedAt,
           })
@@ -53,6 +55,7 @@ export async function GET(): Promise<Response> {
         account: {
           id: profile.id,
           displayName: user.name,
+          role: profile.role,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt,
         },

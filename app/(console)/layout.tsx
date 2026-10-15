@@ -19,6 +19,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { getApplicationRole } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function ConsoleLayout({
   if (!user) {
     redirect("/auth/sign-in");
   }
+  const role = await getApplicationRole(user.id);
 
   return (
     <SidebarProvider
@@ -61,6 +63,9 @@ export default async function ConsoleLayout({
         <SidebarFooter className="border-t border-sidebar-border p-3">
           <p className="truncate px-2 text-xs text-muted-foreground" title={user.email}>
             {user.email}
+          </p>
+          <p className="px-2 pb-2 text-[10px] uppercase tracking-[.16em] text-muted-foreground" aria-label="Account role">
+            {role}
           </p>
           <SidebarMenu>
             <SidebarMenuItem>

@@ -55,6 +55,26 @@ const constraints = await pool.query(
 assert.equal(constraints.rows[0]?.count, 5);
 console.log("Integrity validation: all five ownership/catalog foreign keys exist.");
 
+const roleSchema = await pool.query(
+  `SELECT count(*)::int AS count
+   FROM information_schema.columns
+   WHERE table_schema = 'public'
+     AND table_name = 'customer_profiles'
+     AND column_name = 'role'
+     AND column_default = '''USER'''::text
+     AND is_nullable = 'NO'`,
+);
+assert.equal(roleSchema.rows[0]?.count, 1);
+const roleConstraint = await pool.query(
+  `SELECT count(*)::int AS count
+   FROM information_schema.check_constraints
+   WHERE constraint_schema = 'public'
+     AND constraint_name = 'customer_profiles_role_chk'
+     AND check_clause LIKE '%CEO%ADMIN%MANAGER%VIP%USER%'`,
+);
+assert.equal(roleConstraint.rows[0]?.count, 1);
+console.log("Authorization validation: customer profiles have a constrained role with USER default.");
+
 const immutabilityTrigger = await pool.query(
   `SELECT count(DISTINCT trigger_name)::int AS count
    FROM information_schema.triggers

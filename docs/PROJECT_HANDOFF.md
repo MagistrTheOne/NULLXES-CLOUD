@@ -131,3 +131,10 @@ Report each item separately as **implemented**, **configured**, and **verified**
 - Overview now uses the installed shadcn `Card`, `Button`, `Badge`, `Alert`, `Empty`, and `Avatar` components. The existing server room image is used as a decorative hero backdrop; no provider inventory, spend, credit, billing, or usage values were added.
 - Desktop and mobile navigation share one route-aware shadcn navigation component, so the active page and button variants stay synchronized. Search and notifications were not added because no real actions/data for them are implemented.
 - TypeScript typecheck passed. No tests, app launch, browser screenshot, or production build were run.
+
+## Application roles and development notices — 2026-10-15
+
+- Added `customer_profiles.role` with the constrained roles `CEO`, `ADMIN`, `MANAGER`, `VIP`, and `USER`. Existing rows receive `USER`; signup/profile creation cannot set a role. `GET /api/account` returns the server-stored role.
+- Added server-only role lookup and helpers. Internal notices are allowed only for CEO, Admin, and Manager; missing profiles resolve to `USER`. Elevated roles require a trusted operator to update the application database directly after migration.
+- Disabled the Next.js development indicator. It is framework-owned UI and cannot be gated by application roles. The app has no separate developer-notice feature to role-gate yet.
+- Added forward-only migration `0004_add_customer_roles.sql`; it preserves profile IDs and assigns existing profiles the least privileged role. Migration is not applied to Neon and elevated users have not been assigned.

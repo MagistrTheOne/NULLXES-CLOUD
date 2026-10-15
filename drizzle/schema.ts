@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { LifecycleStatus } from "@/lib/infrastructure/contracts";
+import type { ApplicationRole } from "@/lib/auth/roles";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -30,10 +31,15 @@ export const customerProfiles = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     authUserId: uuid("auth_user_id").notNull(),
+    role: text("role").$type<ApplicationRole>().default("USER").notNull(),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("customer_profiles_auth_user_id_uidx").on(table.authUserId),
+    check(
+      "customer_profiles_role_chk",
+      sql`${table.role} IN ('CEO', 'ADMIN', 'MANAGER', 'VIP', 'USER')`,
+    ),
   ],
 );
 
