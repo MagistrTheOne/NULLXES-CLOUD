@@ -374,6 +374,32 @@ test("organization permissions are scoped and deny unrecognized platform roles",
   );
 });
 
+test("a user cannot read or operate on resources owned by another organization", () => {
+  const userAMembership = { organizationId: "org-a", role: "owner" };
+  const organizationBResource = { organizationId: "org-b" };
+
+  assert.equal(
+    canAccessOrganizationResource(
+      userAMembership.organizationId,
+      organizationBResource.organizationId,
+      userAMembership.role,
+      "instances:read",
+    ),
+    false,
+    "User A must not read Organization B resources even as an organization owner.",
+  );
+  assert.equal(
+    canAccessOrganizationResource(
+      userAMembership.organizationId,
+      organizationBResource.organizationId,
+      userAMembership.role,
+      "instances:operate",
+    ),
+    false,
+    "User A must not operate Organization B resources even as an organization owner.",
+  );
+});
+
 test("organization migration backfills before requiring organization ownership", () => {
   const migration = readFileSync(
     new URL("../drizzle/migrations/0005_add_organizations_and_memberships.sql", import.meta.url),
@@ -402,6 +428,7 @@ test("instance reads verify organization membership before selecting tenant reco
   assert.match(route, /"instances:read"/);
   assert.match(route, /computeInstances\.organizationId, membership\.organizationId/);
   assert.match(route, /status: 404/);
+  assert.match(route, /Cache-Control": "private, no-store"/);
 
   const access = readFileSync(
     new URL("../lib/auth/organization-access.ts", import.meta.url),
@@ -409,4 +436,15 @@ test("instance reads verify organization membership before selecting tenant reco
   );
   assert.match(access, /eq\(customerProfiles\.authUserId, authUserId\)/);
   assert.match(access, /eq\(organizationMemberships\.organizationId, organizationId\)/);
+
+  const accountRoute = readFileSync(
+    new URL("../app/api/account/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(accountRoute, /Cache-Control": "private, no-store"/);
+
+  // No write route currently exists. Keep this test explicit so adding one
+  // requires a separate authorization and ownership review.
+  assert.match(route, /export async function GET\(/);
+  assert.doesNotMatch(route, /export async function (POST|PUT|PATCH|DELETE)\(/);
 });

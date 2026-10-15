@@ -14,7 +14,7 @@ export async function GET(): Promise<Response> {
             message: "Authentication is required to access this account.",
           },
         },
-        { status: 401 },
+        { status: 401, headers: { "Cache-Control": "private, no-store" } },
       );
     }
 
@@ -46,7 +46,7 @@ export async function GET(): Promise<Response> {
           message: "Account information is temporarily unavailable.",
         },
       },
-      { status: 500 },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
     );
   }
 }

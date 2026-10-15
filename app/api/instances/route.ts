@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<Response> {
             message: "Authentication is required to access these instances.",
           },
         },
-        { status: 401 },
+        { status: 401, headers: { "Cache-Control": "private, no-store" } },
       );
     }
 
@@ -93,7 +93,7 @@ export async function GET(request: Request): Promise<Response> {
           message: "Instances are temporarily unavailable.",
         },
       },
-      { status: 500 },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
     );
   }
 }
