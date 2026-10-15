@@ -27,7 +27,7 @@ function Form({ item, onClose }: { item: Item; onClose: () => void }) {
       <p className="-mt-3 mb-5 text-[10px] leading-4 text-muted-foreground">Opens an email draft with this configuration; no order is placed.</p>
       <div className="flex gap-2.5">
         <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-        <Button className="flex-1" render={<a href={`mailto:ceo@nullxes.com?subject=${encodeURIComponent("NULLXES Cloud quote")}&body=${encodeURIComponent(summary)}`} />}>Request quote</Button>
+        <Button className="flex-1" render={<a href={`mailto:ceo@nullxes.com?subject=${encodeURIComponent("NULLXES Cloud quote")}&body=${encodeURIComponent(summary)}`} />} nativeButton={false}>Request quote</Button>
       </div>
     </>
   );

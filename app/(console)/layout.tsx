@@ -101,6 +101,7 @@ export default async function ConsoleLayout({
               <Button
                 key={href}
                 render={<Link href={href} />}
+                nativeButton={false}
                 variant="ghost"
                 size="sm"
                 className="shrink-0"
@@ -110,7 +111,7 @@ export default async function ConsoleLayout({
             ))}
           </nav>
         </header>
-        <div className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:px-10 lg:py-10">
+        <div className="w-full px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           {children}
         </div>
       </SidebarInset>

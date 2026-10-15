@@ -228,7 +228,7 @@ export function InstancesWorkspace() {
             </EmptyDescription>
           </EmptyHeader>
           {!hasFilters && (
-            <Button render={<Link href="/compute" />} variant="outline" size="sm">
+            <Button render={<Link href="/compute" />} nativeButton={false} variant="outline" size="sm">
               Browse published configurations
             </Button>
           )}
